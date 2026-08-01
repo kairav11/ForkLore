@@ -170,6 +170,7 @@ export default function RootLayout() {
           <Stack.Screen name="share/[id]" />
           <Stack.Screen name="match/[id]" />
           <Stack.Screen name="enter" />
+          <Stack.Screen name="library" />
           <Stack.Screen name="story/[id]" />
         </Stack>
         <AmbientAudio />

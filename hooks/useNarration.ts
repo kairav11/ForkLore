@@ -8,6 +8,8 @@ import { countWords } from '@/lib/utils';
 export interface Narration {
   hasAudio: boolean;
   isPlaying: boolean;
+  /** Index of the clip being played, -1 when idle. */
+  activeClip: number;
   /** The line being narrated, as the scene renders it; -1 when idle. */
   activeLine: number;
   /** The word inside that line, -1 while its timing is still unknown. */
@@ -42,12 +44,15 @@ const STALL_MS = 8_000;
 const PAUSE_WEIGHT = 3;
 
 interface Cursor {
+  /** Which clip of the queue is speaking; a whole-story queue needs this to
+   *  know which scene the line belongs to. */
+  clip: number;
   line: number;
   word: number;
   progress: number;
 }
 
-const IDLE: Cursor = { line: -1, word: -1, progress: 0 };
+const IDLE: Cursor = { clip: -1, line: -1, word: -1, progress: 0 };
 
 function clamp01(value: number): number {
   return value < 0 ? 0 : value > 1 ? 1 : value;
@@ -168,7 +173,7 @@ export function useNarration(clips: readonly NarrationClip[]): Narration {
       loaded.current = clip.url;
       sceneEnded.current = false;
 
-      setCursor({ line: clip.line, word: -1, progress: 0 });
+      setCursor({ clip: position, line: clip.line, word: -1, progress: 0 });
       player.replace({ uri: clip.url });
       player.play();
       setPlaying(true);
@@ -283,11 +288,12 @@ export function useNarration(clips: readonly NarrationClip[]): Narration {
       const progress = Number.isFinite(span) && span > 0 ? clamp01(time / span) : 0;
 
       setCursor((current) =>
+        current.clip === index.current &&
         current.line === clip.line &&
         current.word === word &&
         Math.abs(current.progress - progress) < 0.01
           ? current
-          : { line: clip.line, word, progress },
+          : { clip: index.current, line: clip.line, word, progress },
       );
 
       if (time > lastTime.current + 0.01) {
@@ -332,6 +338,7 @@ export function useNarration(clips: readonly NarrationClip[]): Narration {
   return {
     hasAudio: clips.length > 0,
     isPlaying,
+    activeClip: cursor.clip,
     activeLine: cursor.line,
     activeWord: cursor.word,
     lineProgress: cursor.progress,

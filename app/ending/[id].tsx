@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Percent, RefreshCw, Share2, Sparkles } from 'lucide-react-native';
 
 import { finishStory } from '@/lib/api';
+import { useLibraryStore } from '@/lib/library';
 import { useCurrentNode, usePath, useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
 import { useCrossfade } from '@/hooks/useCrossfade';
@@ -31,8 +32,16 @@ export default function EndingScreen() {
   const clear = useStoryStore((state) => state.clear);
   const node = useCurrentNode();
   const path = usePath();
+  const setProgress = useLibraryStore((state) => state.setProgress);
 
   const reported = useRef(false);
+
+  // Mark the reader's own copy finished, so the home list shows the ending is
+  // reached and reopening it lands here rather than back at the opening scene.
+  useEffect(() => {
+    if (!id || mode !== 'owner' || path.length === 0) return;
+    setProgress(id, path, true);
+  }, [id, mode, path, setProgress]);
 
   // Opened without a finished playthrough (deep link / reload): read it instead.
   useEffect(() => {

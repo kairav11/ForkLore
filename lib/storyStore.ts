@@ -12,6 +12,38 @@ export function hasScene(story: Story, nodeId: string): boolean {
   return story.nodes.some((node) => node.id === nodeId && node.text.trim().length > 0);
 }
 
+/**
+ * Replays a list of choice letters from the opening scene, returning where the
+ * reader ends up and the decisions that got them there. A letter that no longer
+ * resolves — the scene was never written, or the story changed — stops the walk,
+ * so a stale saved path can only ever resume short, never break.
+ */
+function walk(
+  story: Story,
+  path: readonly string[],
+): { currentNodeId: string; decisions: Decision[] } {
+  let currentNodeId = story.startNodeId;
+  const decisions: Decision[] = [];
+
+  for (const letter of path) {
+    const node = findNode(story, currentNodeId);
+    const choice = node?.choices.find(
+      (option) => option.letter.toLowerCase() === letter.trim().toLowerCase(),
+    );
+    if (!node || !choice?.nextNodeId || !hasScene(story, choice.nextNodeId)) break;
+
+    decisions.push({
+      nodeId: node.id,
+      nodeText: node.text,
+      choiceLetter: choice.letter,
+      choiceLabel: choice.label,
+    });
+    currentNodeId = choice.nextNodeId;
+  }
+
+  return { currentNodeId, decisions };
+}
+
 interface StoryStoreState {
   story: Story | null;
   mode: PlayMode;
@@ -24,7 +56,11 @@ interface StoryStoreState {
   pendingBranches: Record<string, boolean>;
   /** Keyed by scene key when writing the scenes after it failed. */
   branchErrors: Record<string, string>;
-  loadStory: (story: Story, mode: PlayMode) => void;
+  /**
+   * Loads a story for reading. `resumePath` replays already-taken decisions so a
+   * story opened from the reader's own list carries on where it stopped.
+   */
+  loadStory: (story: Story, mode: PlayMode, resumePath?: readonly string[]) => void;
   choose: (choiceIndex: number) => void;
   restart: () => void;
   setAmbientEnabled: (enabled: boolean) => void;
@@ -46,8 +82,8 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
   pendingBranches: {},
   branchErrors: {},
 
-  loadStory: (story, mode) => {
-    set({ story, mode, currentNodeId: story.startNodeId, decisions: [] });
+  loadStory: (story, mode, resumePath) => {
+    set({ story, mode, ...walk(story, resumePath ?? []) });
   },
 
   choose: (choiceIndex) => {

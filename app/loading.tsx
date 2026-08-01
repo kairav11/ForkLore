@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { createStory, errorMessage } from '@/lib/api';
 import { ensureBranch } from '@/lib/branches';
+import { useLibraryStore } from '@/lib/library';
 import { ensureMedia } from '@/lib/media';
 import { useStoryStore } from '@/lib/storyStore';
 import type { StyleId, ThemeId } from '@/lib/types';
@@ -78,6 +79,13 @@ export default function LoadingScreen() {
 
       loadStory(story, 'owner');
       setStage('painting');
+
+      // Listed on the home screen from the moment it exists, so a story is never
+      // lost because the reader left before the ending.
+      useLibraryStore.getState().record(story, {
+        settingLabel: placeLabel,
+        themeId: theme ?? null,
+      });
 
       // Ambience, narration and the scenes behind the first two choices keep
       // generating in the background; the reader picks them up as they land.

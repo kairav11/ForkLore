@@ -5,6 +5,8 @@ import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Eye, EyeOff, RefreshCw, Volume2, VolumeX, X } from 'lucide-react-native';
 
+import { useLibraryStore } from '@/lib/library';
+import { DECISIONS_PER_STORY } from '@/lib/settings';
 import { findNode, hasScene, useCurrentNode, useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
 import type { PlayMode } from '@/lib/types';
@@ -25,13 +27,17 @@ import { IconButton } from '@/components/ui/IconButton';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
 import { Body, Mono } from '@/components/ui/Text';
 
-const DECISIONS_PER_STORY = 3;
 const PEEK_MS = 220;
 
 export default function ReaderScreen() {
   const router = useRouter();
-  const { id, mode } = useLocalSearchParams<{ id: string; mode?: PlayMode }>();
-  const { story, error } = useEnsureStory(id, mode ?? 'owner');
+  const { id, mode, resume } = useLocalSearchParams<{
+    id: string;
+    mode?: PlayMode;
+    /** Decisions already taken, when the story is reopened from the reader's list. */
+    resume?: string;
+  }>();
+  const { story, error } = useEnsureStory(id, mode ?? 'owner', resume);
   const playMode = useStoryStore((state) => state.mode);
   const decisions = useStoryStore((state) => state.decisions);
   const ambientEnabled = useStoryStore((state) => state.ambientEnabled);
@@ -40,6 +46,26 @@ export default function ReaderScreen() {
   const clear = useStoryStore((state) => state.clear);
 
   const node = useCurrentNode();
+
+  const record = useLibraryStore((state) => state.record);
+  const setProgress = useLibraryStore((state) => state.setProgress);
+
+  // Keep the reader's own list current: metadata as soon as the story is known
+  // (and again when its backdrop lands), progress after every decision. Stories
+  // opened from a friend's code are not the reader's own and are not listed.
+  useEffect(() => {
+    if (!story || playMode !== 'owner') return;
+    record(story);
+  }, [story, playMode, record]);
+
+  useEffect(() => {
+    if (!story || playMode !== 'owner') return;
+    setProgress(
+      story.id,
+      decisions.map((decision) => decision.choiceLetter),
+      false,
+    );
+  }, [story, playMode, decisions, setProgress]);
 
   // Reaching a node without choices means the story is over.
   useEffect(() => {

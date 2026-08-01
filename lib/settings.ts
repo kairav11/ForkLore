@@ -1,5 +1,8 @@
 import type { StyleId } from '@/lib/types';
 
+/** Every story is three decisions long, then it ends. */
+export const DECISIONS_PER_STORY = 3;
+
 export interface StyleOption {
   id: StyleId;
   label: string;

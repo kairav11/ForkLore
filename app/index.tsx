@@ -20,6 +20,7 @@ import { NARRATORS, type NarratorOption } from '@/lib/voices';
 import { FieldCard } from '@/components/FieldCard';
 import { NarratorPicker } from '@/components/NarratorPicker';
 import { SettingPicker } from '@/components/SettingPicker';
+import { StoryLibrary } from '@/components/StoryLibrary';
 import { StylePicker } from '@/components/StylePicker';
 import { ThemePicker } from '@/components/ThemePicker';
 import { ActionButton } from '@/components/ui/ActionButton';
@@ -139,6 +140,8 @@ export default function SetupScreen() {
         </View>
 
         <View className="gap-3 px-5 pt-6">
+          <StoryLibrary />
+
           <FieldCard
             label="Where it happens"
             isActive={isPickerOpen}
