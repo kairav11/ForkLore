@@ -1,12 +1,5 @@
 import { useState } from 'react';
-import {
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  View,
-} from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { BookOpen, KeyRound, Sparkles } from 'lucide-react-native';
@@ -17,12 +10,14 @@ import { palette } from '@/lib/theme';
 import type { ThemeOption } from '@/lib/themes';
 import type { StyleId } from '@/lib/types';
 import { NARRATORS, type NarratorOption } from '@/lib/voices';
-import { FieldCard } from '@/components/FieldCard';
+import { ForkloreMark } from '@/components/ForkloreMark';
 import { NarratorPicker } from '@/components/NarratorPicker';
+import { RoomBackground } from '@/components/RoomBackground';
 import { SettingPicker } from '@/components/SettingPicker';
 import { StoryLibrary } from '@/components/StoryLibrary';
 import { StylePicker } from '@/components/StylePicker';
 import { ThemePicker } from '@/components/ThemePicker';
+import { TicketCard } from '@/components/TicketCard';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { FieldInput } from '@/components/ui/FieldInput';
@@ -124,11 +119,8 @@ export default function SetupScreen() {
             style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
           />
           <View className="pt-safe-offset-5 absolute inset-x-0 bottom-0 justify-end px-5 pb-7">
-            <View className="flex-row items-center gap-2.5 pb-4">
-              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.pathA }} />
-              <View className="h-[2px] w-4" style={{ backgroundColor: palette.borderStrong }} />
-              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.pathB }} />
-              <Mono className="pl-1 text-[10px] tracking-[3px] uppercase">ForkLore</Mono>
+            <View className="pb-4">
+              <ForkloreMark size={24} />
             </View>
             <Display className="text-[40px] leading-[46px]">
               Write the start.{'\n'}Choose the rest.
@@ -139,11 +131,12 @@ export default function SetupScreen() {
           </View>
         </View>
 
-        <View className="gap-3 px-5 pt-6">
+        <RoomBackground className="gap-3 px-5 pt-6 pb-2">
           <StoryLibrary />
 
-          <FieldCard
+          <TicketCard
             label="Where it happens"
+            code="01"
             isActive={isPickerOpen}
             error={showErrors && missingSetting ? 'Pick a setting to continue.' : null}
             hint={
@@ -162,10 +155,11 @@ export default function SetupScreen() {
                 if (showErrors) setShowErrors(false);
               }}
             />
-          </FieldCard>
+          </TicketCard>
 
-          <FieldCard
-            label="Mood — optional"
+          <TicketCard
+            label="Mood"
+            code="02 · optional"
             hint={
               theme
                 ? `${theme.hint} Tap it again to clear.`
@@ -173,10 +167,11 @@ export default function SetupScreen() {
             }
           >
             <ThemePicker value={theme?.id ?? null} onSelect={setTheme} />
-          </FieldCard>
+          </TicketCard>
 
-          <FieldCard
-            label="Your story idea — optional"
+          <TicketCard
+            label="Your story idea"
+            code="03 · optional"
             isActive={isPromptFocused}
             error={ideaError}
             hint="Leave it empty and we invent the premise, or tap the spark for one to edit."
@@ -194,8 +189,8 @@ export default function SetupScreen() {
               minHeight={96}
             />
 
-            <View className="flex-row items-center justify-between">
-              <Mono className="text-[9px] tracking-[2px] uppercase">
+            <View className="flex-row items-center justify-between gap-3">
+              <Mono className="flex-1 text-[9px] tracking-[2px] uppercase">
                 {prompt.trim().length > 0
                   ? 'Your words'
                   : theme
@@ -203,52 +198,41 @@ export default function SetupScreen() {
                     : 'Surprise me works too'}
               </Mono>
 
-              <Pressable
-                onPress={() => void suggestIdea()}
+              <ActionButton
+                label={
+                  isThinking ? 'Thinking' : prompt.trim().length === 0 ? 'Give me one' : 'Another'
+                }
+                variant="outline"
+                size="sm"
+                icon={Sparkles}
                 disabled={isThinking}
-                accessibilityRole="button"
-                accessibilityLabel="Suggest a story idea"
-                accessibilityState={{ disabled: isThinking }}
-                style={({ pressed }) => ({ opacity: isThinking ? 0.6 : pressed ? 0.8 : 1 })}
-              >
-                <View
-                  className="h-9 flex-row items-center gap-2 rounded-full px-3.5"
-                  style={{
-                    backgroundColor: palette.accentSoft,
-                    borderWidth: 1,
-                    borderColor: palette.pathAEdge,
-                  }}
-                >
-                  {isThinking ? (
-                    <ActivityIndicator size="small" color={palette.accent} />
-                  ) : (
-                    <Sparkles size={13} color={palette.accent} />
-                  )}
-                  <Mono className="text-[10px] tracking-[2px] uppercase" color={palette.accent}>
-                    {isThinking
-                      ? 'Thinking'
-                      : prompt.trim().length === 0
-                        ? 'Give me one'
-                        : 'Another'}
-                  </Mono>
-                </View>
-              </Pressable>
+                leading={
+                  isThinking ? <ActivityIndicator size="small" color={palette.accent} /> : undefined
+                }
+                onPress={() => void suggestIdea()}
+              />
             </View>
-          </FieldCard>
+          </TicketCard>
 
-          <FieldCard label="Art style" hint="Every scene in your story is drawn this way.">
+          <TicketCard
+            label="Art style"
+            code="04"
+            hint="Every scene in your story is drawn this way."
+          >
             <StylePicker value={styleId} onSelect={setStyleId} />
-          </FieldCard>
+          </TicketCard>
 
-          <FieldCard
+          <TicketCard
             label="Narrator"
+            code="05"
             hint="This voice reads every scene. Characters who speak get their own."
           >
             <NarratorPicker value={narrator.id} onSelect={setNarrator} />
-          </FieldCard>
+          </TicketCard>
 
-          <FieldCard
-            label="Your name (optional)"
+          <TicketCard
+            label="Your name"
+            code="06 · optional"
             isActive={isNameFocused}
             hint="Friends see this on their match score."
           >
@@ -261,8 +245,8 @@ export default function SetupScreen() {
               autoCapitalize="words"
               autoCorrect={false}
             />
-          </FieldCard>
-        </View>
+          </TicketCard>
+        </RoomBackground>
       </ScrollView>
 
       <View className="pb-safe-offset-4 gap-1 px-5 pt-3">

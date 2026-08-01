@@ -4,6 +4,7 @@ import { Check, ChevronDown, Plus, X } from 'lucide-react-native';
 
 import { MAX_PLACE_HINT, MAX_PLACE_LABEL, type PlaceOption, usePlacesStore } from '@/lib/places';
 import { palette } from '@/lib/theme';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { FieldInput } from '@/components/ui/FieldInput';
 import { Body, Mono } from '@/components/ui/Text';
@@ -213,29 +214,18 @@ export function SettingPicker({ value, isOpen, onToggle, onSelect }: SettingPick
                 </Body>
               )}
 
-              <Pressable
-                onPress={() => void save()}
+              <ActionButton
+                label={isSaving ? 'Saving' : 'Save place'}
+                size="sm"
+                icon={Check}
                 disabled={isSaving}
-                accessibilityRole="button"
-                accessibilityLabel="Save this place"
-                accessibilityState={{ disabled: isSaving }}
-                style={({ pressed }) => ({ opacity: isSaving ? 0.6 : pressed ? 0.85 : 1 })}
-              >
-                <View
-                  className="h-10 flex-row items-center justify-center gap-2 rounded-full"
-                  style={{ backgroundColor: palette.accent }}
-                >
-                  {isSaving ? (
+                leading={
+                  isSaving ? (
                     <ActivityIndicator size="small" color={palette.accentForeground} />
-                  ) : null}
-                  <Mono
-                    className="text-[10px] tracking-[2px] uppercase"
-                    color={palette.accentForeground}
-                  >
-                    {isSaving ? 'Saving' : 'Save place'}
-                  </Mono>
-                </View>
-              </Pressable>
+                  ) : undefined
+                }
+                onPress={() => void save()}
+              />
             </View>
           ) : (
             <Pressable
