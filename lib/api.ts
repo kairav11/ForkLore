@@ -13,6 +13,7 @@ import type {
   SettingId,
   Story,
   StoryChoice,
+  StoryLine,
   StoryNode,
   StyleId,
 } from '@/lib/types';
@@ -87,6 +88,7 @@ interface NodeRow {
   node_key: string;
   depth: number;
   text: string;
+  lines: unknown;
   image_url: string | null;
   audio_urls: string[] | null;
   choices: unknown;
@@ -158,6 +160,7 @@ function toNodeRow(value: unknown): NodeRow | null {
     node_key: nodeKey,
     depth,
     text,
+    lines: Reflect.get(value, 'lines'),
     image_url: typeof imageUrl === 'string' ? imageUrl : null,
     audio_urls: Array.isArray(audioUrls)
       ? audioUrls.filter((item): item is string => typeof item === 'string')
@@ -227,10 +230,32 @@ function mapChoices(raw: unknown): StoryChoice[] {
   });
 }
 
+/**
+ * A scene's narration and spoken lines. Scenes written before dialogue existed
+ * have no lines at all; the reader falls back to the whole-scene transcript.
+ */
+function mapLines(raw: unknown): StoryLine[] {
+  if (!Array.isArray(raw)) return [];
+  const entries: unknown[] = raw;
+
+  return entries.flatMap((entry): StoryLine[] => {
+    if (typeof entry !== 'object' || entry === null) return [];
+
+    const text: unknown = Reflect.get(entry, 'text');
+    if (typeof text !== 'string' || text.trim().length === 0) return [];
+
+    const speaker: unknown = Reflect.get(entry, 'speaker');
+    const name = typeof speaker === 'string' ? speaker.trim() : '';
+
+    return [{ speaker: name.length > 0 ? name : null, text: text.trim() }];
+  });
+}
+
 function mapNode(row: NodeRow): StoryNode {
   return {
     id: row.node_key,
     text: row.text,
+    lines: mapLines(row.lines),
     imageUrl: row.image_url,
     audioUrls: row.audio_urls ?? [],
     choices: mapChoices(row.choices),
@@ -269,9 +294,10 @@ function mapStory(row: StoryRow, nodeRows: NodeRow[]): Story {
 /* ------------------------------------------------------------------ */
 
 /**
- * Generates a new story from the setting, idea and art style. Only the opening
- * scene comes back — the branches after it are written by `expandBranch` as the
- * reader gets to them, which keeps every backend call comfortably short.
+ * Generates a new story from the setting, idea and art style. The idea may be
+ * empty, in which case the writer invents the premise. Only the opening scene
+ * comes back — the branches after it are written by `expandBranch` as the reader
+ * gets to them, which keeps every backend call comfortably short.
  */
 export async function createStory(input: CreateStoryInput): Promise<Story> {
   const created = await invoke<{ id?: string }>('story-create', {
@@ -285,6 +311,24 @@ export async function createStory(input: CreateStoryInput): Promise<Story> {
 
   if (!created.id) throw new ApiError(GENERIC_FAILURE);
   return getStory(created.id);
+}
+
+/**
+ * One story premise for the setup screen's spark button. `avoid` is whatever is
+ * already in the field, so tapping again gives a different idea.
+ */
+export async function generateIdea(settingId: SettingId | null, avoid?: string): Promise<string> {
+  const result = await invoke<{ idea?: string }>('story-idea', {
+    settingId: settingId ?? '',
+    settingLabel: settingId ? settingLabel(settingId) : '',
+    avoid: avoid ?? '',
+  });
+
+  const idea = (result.idea ?? '').trim();
+  if (idea.length === 0) {
+    throw new ApiError('We could not think of an idea just now. Try again in a moment.');
+  }
+  return idea;
 }
 
 /** Loads a story by its id or by the share code a friend was given. */

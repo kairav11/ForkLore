@@ -39,7 +39,7 @@ export default function LoadingScreen() {
   const params = useLocalSearchParams<{
     setting: SettingId;
     style: StyleId;
-    prompt: string;
+    prompt?: string;
     name?: string;
   }>();
   const loadStory = useStoryStore((state) => state.loadStory);
@@ -58,7 +58,8 @@ export default function LoadingScreen() {
     const run = async () => {
       const story = await createStory({
         settingId: setting,
-        prompt,
+        // Empty is allowed: the writer invents the premise instead.
+        prompt: prompt ?? '',
         styleId: style,
         ownerName: name,
       });

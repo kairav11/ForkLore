@@ -7,6 +7,7 @@ import { findNode, useCurrentNode, useStoryStore } from '@/lib/storyStore';
 import { palette, pathTone } from '@/lib/theme';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
 import { PathLine } from '@/components/PathLine';
+import { SceneText } from '@/components/SceneText';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
@@ -108,9 +109,11 @@ export default function ReplayScreen() {
                   />
                 ) : null}
 
-                <Body className="text-[16px] leading-[26px]">
-                  {node?.text ?? decision.nodeText}
-                </Body>
+                <SceneText
+                  lines={node?.lines ?? []}
+                  text={node?.text ?? decision.nodeText}
+                  size="recap"
+                />
 
                 <View
                   className="flex-row items-start gap-2 pt-3"
@@ -166,7 +169,7 @@ export default function ReplayScreen() {
                   accessibilityIgnoresInvertColors
                 />
               ) : null}
-              <Body className="text-[16px] leading-[26px]">{endingNode.text}</Body>
+              <SceneText lines={endingNode.lines} text={endingNode.text} size="recap" />
             </View>
           ) : null}
 

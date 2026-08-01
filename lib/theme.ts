@@ -17,6 +17,11 @@ export const palette = {
   panelSoft: 'rgba(31, 33, 40, 0.7)',
   /** Reading panel over scene art: dark enough for type, light enough to see through. */
   panelReading: 'rgba(16, 17, 22, 0.7)',
+  /** The story band: lighter still, so the artwork carries the screen. */
+  panelScene: 'rgba(14, 15, 19, 0.55)',
+  /** Masks text clipped by the collapsed story band. */
+  panelFade: 'rgba(14, 15, 19, 0)',
+  panelFadeStrong: 'rgba(14, 15, 19, 0.92)',
   foreground: '#F2EFE9',
   muted: '#9B9CA6',
   placeholder: '#6F7180',

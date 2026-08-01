@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Percent, RefreshCw, Share2, Sparkles } from 'lucide-react-native';
@@ -14,12 +14,13 @@ import { useSceneMedia } from '@/hooks/useSceneMedia';
 import { MediaHint } from '@/components/MediaHint';
 import { NarrationPill } from '@/components/NarrationPill';
 import { PathLine } from '@/components/PathLine';
+import { ReadingPanel } from '@/components/ReadingPanel';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
-import { Body, Mono } from '@/components/ui/Text';
+import { Mono } from '@/components/ui/Text';
 
 export default function EndingScreen() {
   const router = useRouter();
@@ -108,28 +109,31 @@ export default function EndingScreen() {
             <PathLine total={Math.max(takenPath.length, 3)} choices={takenPath} />
           </View>
 
-          <View
-            className="gap-3.5 rounded-3xl px-5 py-4"
-            style={{ backgroundColor: palette.panelReading }}
-          >
-            <Mono className="text-[10px] tracking-[3px] uppercase" color={palette.accent}>
-              The end
-            </Mono>
-
-            {story.title ? (
-              <Display className="text-[30px] leading-[36px]">{story.title}</Display>
-            ) : null}
-
-            <ScrollView className="max-h-48" showsVerticalScrollIndicator={false}>
-              <Body className="text-[17px] leading-[28px]">{node.text}</Body>
-            </ScrollView>
-
-            {narration.hasAudio ? (
-              <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
-            ) : isRecordingNarration ? (
-              <MediaHint kind="voice" />
-            ) : null}
-          </View>
+          <ReadingPanel
+            key={node.id}
+            lines={node.lines}
+            text={node.text}
+            size="ending"
+            collapsedHeight={150}
+            expandedHeight={320}
+            header={
+              <View className="gap-2">
+                <Mono className="text-[10px] tracking-[3px] uppercase" color={palette.accent}>
+                  The end
+                </Mono>
+                {story.title ? (
+                  <Display className="text-[28px] leading-[34px]">{story.title}</Display>
+                ) : null}
+              </View>
+            }
+            footer={
+              narration.hasAudio ? (
+                <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
+              ) : isRecordingNarration ? (
+                <MediaHint kind="voice" />
+              ) : null
+            }
+          />
         </AnimatedView>
 
         <View className="gap-2.5">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
 import { ClipboardPaste, DoorOpen } from 'lucide-react-native';
@@ -7,12 +7,12 @@ import { ClipboardPaste, DoorOpen } from 'lucide-react-native';
 import { errorMessage, getStory } from '@/lib/api';
 import { parseShareInput } from '@/lib/share';
 import { useStoryStore } from '@/lib/storyStore';
-import { fonts, palette } from '@/lib/theme';
 import { FieldCard } from '@/components/FieldCard';
 import { GlowBackground } from '@/components/GlowBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
+import { FieldInput } from '@/components/ui/FieldInput';
 import { Body } from '@/components/ui/Text';
 
 export default function EnterSharedStoryScreen() {
@@ -79,7 +79,7 @@ export default function EnterSharedStoryScreen() {
             error={error}
             hint="Paste the whole link too — we will find the code in it."
           >
-            <TextInput
+            <FieldInput
               value={input}
               onChangeText={(text) => {
                 setInput(text);
@@ -88,17 +88,11 @@ export default function EnterSharedStoryScreen() {
               onFocus={() => setFocused(true)}
               onBlur={() => setFocused(false)}
               placeholder="8FJ3KD"
-              placeholderTextColor={palette.placeholder}
+              variant="code"
               autoCapitalize="characters"
               autoCorrect={false}
+              returnKeyType="go"
               onSubmitEditing={() => void openStory()}
-              style={{
-                height: 34,
-                fontFamily: fonts.monoBold,
-                fontSize: 22,
-                letterSpacing: 4,
-                color: palette.foreground,
-              }}
             />
           </FieldCard>
 

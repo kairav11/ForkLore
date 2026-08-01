@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -17,10 +17,10 @@ import { ChoiceButton } from '@/components/ChoiceButton';
 import { MediaHint } from '@/components/MediaHint';
 import { NarrationPill } from '@/components/NarrationPill';
 import { PathLine } from '@/components/PathLine';
+import { ReadingPanel } from '@/components/ReadingPanel';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
 import { ActionButton } from '@/components/ui/ActionButton';
-import { Display } from '@/components/ui/Display';
 import { IconButton } from '@/components/ui/IconButton';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
 import { Body, Mono } from '@/components/ui/Text';
@@ -169,32 +169,36 @@ export default function ReaderScreen() {
         <AnimatedView
           style={peekStyle}
           pointerEvents={isPeeking ? 'none' : 'auto'}
-          className="gap-3.5"
+          className="gap-3"
         >
-          <AnimatedView style={crossfadeStyle} className="gap-3.5">
-            {/* Translucent charcoal panel, borderless: the story reads cleanly and
-                the artwork behind it stays legible as artwork. */}
-            <View
-              className="gap-3.5 rounded-3xl px-5 py-4"
-              style={{ backgroundColor: palette.panelReading }}
-            >
-              <Display weight="medium" className="text-muted text-[14px] leading-5">
-                {sceneLabel}
-              </Display>
-
-              <ScrollView className="max-h-44" showsVerticalScrollIndicator={false}>
-                <Body className="text-[17px] leading-[27px]">{shownNode.text}</Body>
-              </ScrollView>
-
-              {narration.hasAudio ? (
-                <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
-              ) : isRecordingNarration ? (
-                <MediaHint kind="voice" />
-              ) : null}
-
-              {isPaintingScene ? <MediaHint kind="art" /> : null}
-              {branches.isWriting ? <MediaHint kind="writing" /> : null}
-            </View>
+          <AnimatedView style={crossfadeStyle} className="gap-3">
+            {/* A light translucent band, not a card: the artwork carries the
+                screen and only a few lines of story sit over it until the
+                reader taps "Read all". */}
+            <ReadingPanel
+              key={shownNode.id}
+              lines={shownNode.lines}
+              text={shownNode.text}
+              collapsedHeight={116}
+              expandedHeight={296}
+              header={<Mono className="text-[9px] tracking-[2px] uppercase">{sceneLabel}</Mono>}
+              footer={
+                narration.hasAudio ||
+                isRecordingNarration ||
+                isPaintingScene ||
+                branches.isWriting ? (
+                  <View className="flex-row flex-wrap items-center gap-x-3 gap-y-2">
+                    {narration.hasAudio ? (
+                      <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
+                    ) : isRecordingNarration ? (
+                      <MediaHint kind="voice" />
+                    ) : null}
+                    {isPaintingScene ? <MediaHint kind="art" /> : null}
+                    {branches.isWriting ? <MediaHint kind="writing" /> : null}
+                  </View>
+                ) : null
+              }
+            />
 
             <View className="gap-2.5">
               {choices.map((choice, index) => (

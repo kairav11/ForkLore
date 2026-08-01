@@ -1,33 +1,35 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
-  TextInput,
   View,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { BookOpen, Check, KeyRound } from 'lucide-react-native';
+import { BookOpen, Check, KeyRound, Sparkles } from 'lucide-react-native';
 
+import { errorMessage, generateIdea } from '@/lib/api';
 import { SETTINGS, STYLES } from '@/lib/settings';
-import { fonts, palette } from '@/lib/theme';
+import { palette } from '@/lib/theme';
 import type { SettingId, StyleId } from '@/lib/types';
 import { FieldCard } from '@/components/FieldCard';
 import { SettingPicker } from '@/components/SettingPicker';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
+import { FieldInput } from '@/components/ui/FieldInput';
 import { LinearGradient } from '@/components/ui/primitives/LinearGradient';
 import { Body, Mono } from '@/components/ui/Text';
 
 const HERO: number = require('@/assets/images/setup-hero.png');
 
-/** Previews are built from the app's own two path tones, never stock colours. */
-const STYLE_SWATCHES: Record<StyleId, readonly [string, string]> = {
-  'flat-illustrated': [palette.pathA, palette.pathB],
-  'comic-ink': [palette.foreground, palette.surfaceRaised],
-  painterly: [palette.pathB, palette.pathA],
+/** A real sample of each treatment, so the choice is made by eye. */
+const STYLE_PREVIEWS: Record<StyleId, number> = {
+  'flat-illustrated': require('@/assets/images/style-flat.png'),
+  'comic-ink': require('@/assets/images/style-comic.png'),
+  painterly: require('@/assets/images/style-painterly.png'),
 };
 
 export default function SetupScreen() {
@@ -36,17 +38,18 @@ export default function SetupScreen() {
   const [isPickerOpen, setPickerOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isPromptFocused, setPromptFocused] = useState(false);
+  const [isThinking, setIsThinking] = useState(false);
+  const [ideaError, setIdeaError] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [isNameFocused, setNameFocused] = useState(false);
   const [styleId, setStyleId] = useState<StyleId>('flat-illustrated');
   const [showErrors, setShowErrors] = useState(false);
 
   const missingSetting = setting === null;
-  const missingPrompt = prompt.trim().length === 0;
   const settingHint = SETTINGS.find((option) => option.id === setting)?.hint;
 
   const handleStart = () => {
-    if (missingSetting || missingPrompt) {
+    if (missingSetting) {
       setShowErrors(true);
       return;
     }
@@ -59,6 +62,18 @@ export default function SetupScreen() {
         name: name.trim(),
       },
     });
+  };
+
+  const suggestIdea = async () => {
+    setIsThinking(true);
+    setIdeaError(null);
+    try {
+      setPrompt(await generateIdea(setting, prompt.trim()));
+    } catch (cause) {
+      setIdeaError(errorMessage(cause));
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return (
@@ -133,42 +148,66 @@ export default function SetupScreen() {
           </FieldCard>
 
           <FieldCard
-            label="Your story idea"
+            label="Your story idea — optional"
             isActive={isPromptFocused}
-            error={
-              showErrors && missingPrompt
-                ? 'Add a sentence or two so we know where to start.'
-                : null
-            }
-            hint="A sentence is enough. More detail means a closer match."
+            error={ideaError}
+            hint="Leave it empty and we invent the premise, or tap the spark for one to edit."
           >
-            <TextInput
+            <FieldInput
               value={prompt}
               onChangeText={(text) => {
                 setPrompt(text);
-                if (showErrors) setShowErrors(false);
+                if (ideaError) setIdeaError(null);
               }}
               onFocus={() => setPromptFocused(true)}
               onBlur={() => setPromptFocused(false)}
               placeholder="A quiet kid finds a note in their locker that knows their secret…"
-              placeholderTextColor={palette.placeholder}
               multiline
-              textAlignVertical="top"
-              style={{
-                minHeight: 104,
-                fontFamily: fonts.body,
-                fontSize: 17,
-                lineHeight: 26,
-                color: palette.foreground,
-              }}
+              minHeight={96}
             />
+
+            <View className="flex-row items-center justify-between">
+              <Mono className="text-[9px] tracking-[2px] uppercase">
+                {prompt.trim().length === 0 ? 'Surprise me works too' : 'Your words'}
+              </Mono>
+
+              <Pressable
+                onPress={() => void suggestIdea()}
+                disabled={isThinking}
+                accessibilityRole="button"
+                accessibilityLabel="Suggest a story idea"
+                accessibilityState={{ disabled: isThinking }}
+                style={({ pressed }) => ({ opacity: isThinking ? 0.6 : pressed ? 0.8 : 1 })}
+              >
+                <View
+                  className="h-9 flex-row items-center gap-2 rounded-full px-3.5"
+                  style={{
+                    backgroundColor: palette.accentSoft,
+                    borderWidth: 1,
+                    borderColor: palette.pathAEdge,
+                  }}
+                >
+                  {isThinking ? (
+                    <ActivityIndicator size="small" color={palette.accent} />
+                  ) : (
+                    <Sparkles size={13} color={palette.accent} />
+                  )}
+                  <Mono className="text-[10px] tracking-[2px] uppercase" color={palette.accent}>
+                    {isThinking
+                      ? 'Thinking'
+                      : prompt.trim().length === 0
+                        ? 'Give me one'
+                        : 'Another'}
+                  </Mono>
+                </View>
+              </Pressable>
+            </View>
           </FieldCard>
 
-          <FieldCard label="Art style">
+          <FieldCard label="Art style" hint="Every scene in your story is drawn this way.">
             <View className="flex-row gap-2.5">
               {STYLES.map((option) => {
                 const isSelected = option.id === styleId;
-                const swatch = STYLE_SWATCHES[option.id];
                 return (
                   <Pressable
                     key={option.id}
@@ -187,12 +226,14 @@ export default function SetupScreen() {
                         borderColor: isSelected ? palette.accent : palette.border,
                       }}
                     >
-                      <View className="h-14 w-full overflow-hidden rounded-xl">
-                        <LinearGradient
-                          colors={[swatch[0], swatch[1]]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={{ width: '100%', height: '100%' }}
+                      <View className="w-full overflow-hidden rounded-xl">
+                        <Image
+                          source={STYLE_PREVIEWS[option.id]}
+                          style={{ width: '100%', height: 92 }}
+                          contentFit="cover"
+                          contentPosition="center"
+                          cachePolicy="memory-disk"
+                          accessibilityIgnoresInvertColors
                         />
                         {isSelected ? (
                           <View className="absolute inset-0 items-center justify-center">
@@ -223,21 +264,14 @@ export default function SetupScreen() {
             isActive={isNameFocused}
             hint="Friends see this on their match score."
           >
-            <TextInput
+            <FieldInput
               value={name}
               onChangeText={setName}
               onFocus={() => setNameFocused(true)}
               onBlur={() => setNameFocused(false)}
               placeholder="e.g. Mia"
-              placeholderTextColor={palette.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
-              style={{
-                height: 30,
-                fontFamily: fonts.body,
-                fontSize: 17,
-                color: palette.foreground,
-              }}
             />
           </FieldCard>
         </View>

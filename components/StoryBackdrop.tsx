@@ -81,7 +81,7 @@ export function StoryBackdrop({
             ? [palette.transparent, palette.scrim, palette.scrimStrong]
             : [palette.transparent, palette.scrimSoft, palette.scrim]
         }
-        locations={isStrong ? [0.3, 0.62, 1] : [0.46, 0.74, 1]}
+        locations={isStrong ? [0.3, 0.62, 1] : [0.5, 0.76, 1]}
         style={{ ...fill }}
       />
 

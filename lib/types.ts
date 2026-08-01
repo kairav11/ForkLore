@@ -9,9 +9,19 @@ export interface StoryChoice {
   nextNodeId: string | null;
 }
 
+/** One beat of a scene: narration, or a character actually speaking. */
+export interface StoryLine {
+  /** null for narration, the character's name when they speak. */
+  speaker: string | null;
+  text: string;
+}
+
 export interface StoryNode {
   id: string;
+  /** Whole-scene transcript: narration and dialogue in reading order. */
   text: string;
+  /** The same scene split into narration and spoken lines. */
+  lines: StoryLine[];
   /** Character / foreground image layered over the fixed background. */
   imageUrl: string | null;
   /** One or more narrated lines, played back to back. */
@@ -57,6 +67,7 @@ export interface MatchResult {
 
 export interface CreateStoryInput {
   settingId: SettingId;
+  /** May be empty — the writer then invents the premise. */
   prompt: string;
   styleId: StyleId;
   /** Shown to friends on the match screen. */
