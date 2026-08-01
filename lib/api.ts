@@ -16,6 +16,7 @@ import type {
   StoryLine,
   StoryNode,
   StyleId,
+  WordMark,
 } from '@/lib/types';
 
 export class ApiError extends Error {
@@ -91,6 +92,7 @@ interface NodeRow {
   lines: unknown;
   image_url: string | null;
   audio_urls: string[] | null;
+  audio_marks: unknown;
   choices: unknown;
   is_ending: boolean;
 }
@@ -165,6 +167,7 @@ function toNodeRow(value: unknown): NodeRow | null {
     audio_urls: Array.isArray(audioUrls)
       ? audioUrls.filter((item): item is string => typeof item === 'string')
       : null,
+    audio_marks: Reflect.get(value, 'audio_marks'),
     choices: Reflect.get(value, 'choices'),
     is_ending: isEnding,
   };
@@ -251,6 +254,31 @@ function mapLines(raw: unknown): StoryLine[] {
   });
 }
 
+/**
+ * Word timings as stored: one array per narrated clip, each word a compact
+ * `{ s, e }` pair of seconds. A clip the voice provider gave no alignment for
+ * comes back as null and the reader estimates its timings instead.
+ */
+function mapAudioMarks(raw: unknown): (WordMark[] | null)[] {
+  if (!Array.isArray(raw)) return [];
+  const clips: unknown[] = raw;
+
+  return clips.map((clip): WordMark[] | null => {
+    if (!Array.isArray(clip)) return null;
+    const words: unknown[] = clip;
+
+    const marks = words.flatMap((entry): WordMark[] => {
+      if (typeof entry !== 'object' || entry === null) return [];
+      const start: unknown = Reflect.get(entry, 's');
+      const end: unknown = Reflect.get(entry, 'e');
+      if (typeof start !== 'number' || typeof end !== 'number') return [];
+      return [{ start, end: Math.max(end, start) }];
+    });
+
+    return marks.length > 0 ? marks : null;
+  });
+}
+
 function mapNode(row: NodeRow): StoryNode {
   return {
     id: row.node_key,
@@ -258,6 +286,7 @@ function mapNode(row: NodeRow): StoryNode {
     lines: mapLines(row.lines),
     imageUrl: row.image_url,
     audioUrls: row.audio_urls ?? [],
+    audioMarks: mapAudioMarks(row.audio_marks),
     choices: mapChoices(row.choices),
     isEnding: row.is_ending,
     depth: row.depth,
@@ -371,7 +400,25 @@ export async function generateMedia(
   target: MediaTarget,
   nodeKey?: string,
 ): Promise<MediaResult> {
-  return invoke<MediaResult>('story-media', { storyId, target, nodeKey: nodeKey ?? '' });
+  const result = await invoke<{
+    backgroundImageUrl?: string | null;
+    backgroundAudioUrl?: string | null;
+    imageUrl?: string | null;
+    audioUrls?: unknown;
+    audioMarks?: unknown;
+  }>('story-media', { storyId, target, nodeKey: nodeKey ?? '' });
+
+  const audioUrls = Array.isArray(result.audioUrls)
+    ? result.audioUrls.filter((item): item is string => typeof item === 'string')
+    : [];
+
+  return {
+    backgroundImageUrl: result.backgroundImageUrl ?? null,
+    backgroundAudioUrl: result.backgroundAudioUrl ?? null,
+    imageUrl: result.imageUrl ?? null,
+    audioUrls,
+    audioMarks: mapAudioMarks(result.audioMarks),
+  };
 }
 
 /** Records the player's path once they reach an ending. */

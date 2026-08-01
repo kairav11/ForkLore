@@ -9,7 +9,7 @@ import { useCurrentNode, usePath, useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
 import { useCrossfade } from '@/hooks/useCrossfade';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
-import { useNarration } from '@/hooks/useNarration';
+import { useSceneNarration } from '@/hooks/useNarration';
 import { useSceneMedia } from '@/hooks/useSceneMedia';
 import { MediaHint } from '@/components/MediaHint';
 import { NarrationPill } from '@/components/NarrationPill';
@@ -51,8 +51,7 @@ export default function EndingScreen() {
     });
   }, [id, path, decisions, mode]);
 
-  const audioUrls = useMemo(() => node?.audioUrls ?? [], [node]);
-  const narration = useNarration(audioUrls);
+  const narration = useSceneNarration(node);
   const { style: fadeStyle } = useCrossfade(node?.id ?? null);
   const { isRecordingNarration } = useSceneMedia(story, node);
 
@@ -116,6 +115,9 @@ export default function EndingScreen() {
             size="ending"
             collapsedHeight={150}
             expandedHeight={320}
+            activeLine={narration.activeLine}
+            activeWord={narration.activeWord}
+            lineProgress={narration.lineProgress}
             header={
               <View className="gap-2">
                 <Mono className="text-[10px] tracking-[3px] uppercase" color={palette.accent}>

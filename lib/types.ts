@@ -16,6 +16,16 @@ export interface StoryLine {
   text: string;
 }
 
+/**
+ * One word of a narrated clip, in seconds from the start of that clip. Words are
+ * cut on whitespace, so index N here is the Nth whitespace-separated word of the
+ * line's text.
+ */
+export interface WordMark {
+  start: number;
+  end: number;
+}
+
 export interface StoryNode {
   id: string;
   /** Whole-scene transcript: narration and dialogue in reading order. */
@@ -26,6 +36,12 @@ export interface StoryNode {
   imageUrl: string | null;
   /** One or more narrated lines, played back to back. */
   audioUrls: string[];
+  /**
+   * Word timings for each clip in `audioUrls`, same order. null for a clip the
+   * voice provider gave no alignment for, and empty for scenes recorded before
+   * word timings existed — the reader then estimates them from the clip length.
+   */
+  audioMarks: (WordMark[] | null)[];
   choices: StoryChoice[];
   isEnding: boolean;
   /** 0 for the opening scene, 3 for an ending. */
@@ -92,4 +108,5 @@ export interface MediaResult {
   backgroundAudioUrl?: string | null;
   imageUrl?: string | null;
   audioUrls?: string[];
+  audioMarks?: (WordMark[] | null)[];
 }

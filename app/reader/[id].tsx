@@ -10,7 +10,7 @@ import { palette } from '@/lib/theme';
 import type { PlayMode } from '@/lib/types';
 import { useCrossfade } from '@/hooks/useCrossfade';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
-import { useNarration } from '@/hooks/useNarration';
+import { useSceneNarration } from '@/hooks/useNarration';
 import { useSceneBranches } from '@/hooks/useSceneBranches';
 import { useSceneMedia } from '@/hooks/useSceneMedia';
 import { ChoiceButton } from '@/components/ChoiceButton';
@@ -50,8 +50,7 @@ export default function ReaderScreen() {
 
   const { shown: shownNodeId, style: crossfadeStyle } = useCrossfade(node?.id ?? null);
   const shownNode = story && shownNodeId ? findNode(story, shownNodeId) : null;
-  const audioUrls = useMemo(() => shownNode?.audioUrls ?? [], [shownNode]);
-  const narration = useNarration(audioUrls);
+  const narration = useSceneNarration(shownNode);
   const { isPaintingScene, isRecordingNarration } = useSceneMedia(story, shownNode);
   const branches = useSceneBranches(story, shownNode);
 
@@ -181,6 +180,9 @@ export default function ReaderScreen() {
               text={shownNode.text}
               collapsedHeight={116}
               expandedHeight={296}
+              activeLine={narration.activeLine}
+              activeWord={narration.activeWord}
+              lineProgress={narration.lineProgress}
               header={<Mono className="text-[9px] tracking-[2px] uppercase">{sceneLabel}</Mono>}
               footer={
                 narration.hasAudio ||

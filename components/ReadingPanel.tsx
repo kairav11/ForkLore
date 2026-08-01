@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 import { ChevronDown, ChevronUp } from 'lucide-react-native';
 
@@ -19,9 +19,24 @@ interface ReadingPanelProps {
   header?: ReactNode;
   /** Sits below the toggle — the narration pill and generation hints. */
   footer?: ReactNode;
+  /** Line being narrated, -1 when nothing is playing. */
+  activeLine?: number;
+  /** Word inside that line, -1 when its timing is unknown. */
+  activeWord?: number;
+  /** How far through the active line, 0 to 1 — used to scroll long lines. */
+  lineProgress?: number;
 }
 
 const FADE_HEIGHT = 34;
+/** Breathing room kept above the line being narrated. */
+const TOP_GAP = 8;
+/** Ignore scroll targets closer than this, so the panel does not jitter. */
+const SCROLL_STEP = 18;
+
+interface LineBox {
+  y: number;
+  height: number;
+}
 
 /**
  * The band of story text over the scene art.
@@ -30,6 +45,10 @@ const FADE_HEIGHT = 34;
  * only a few lines tall until the reader asks for the rest. The artwork is the
  * screen; this is a caption on top of it. Mount it with a key per scene so the
  * expanded state resets when the scene changes.
+ *
+ * While narration plays the panel opens itself and follows the voice, keeping the
+ * spoken line in view; when the narration stops it closes again, but only if it
+ * was the narration that opened it.
  */
 export function ReadingPanel({
   lines,
@@ -39,12 +58,58 @@ export function ReadingPanel({
   size = 'reader',
   header,
   footer,
+  activeLine = -1,
+  activeWord = -1,
+  lineProgress = 0,
 }: ReadingPanelProps) {
   const [isExpanded, setExpanded] = useState(false);
   const [contentHeight, setContentHeight] = useState(0);
 
+  const scroller = useRef<ScrollView>(null);
+  const boxes = useRef(new Map<number, LineBox>());
+  const lastTarget = useRef(-1);
+  const wasNarrating = useRef(false);
+  const openedByNarration = useRef(false);
+
   const overflows = contentHeight > collapsedHeight + 6;
-  const maxHeight = isExpanded ? expandedHeight : collapsedHeight;
+  const viewHeight = isExpanded ? expandedHeight : collapsedHeight;
+
+  // Narration needs the whole scene visible to scroll through, so starting it
+  // opens the panel. A reader who collapses it mid-playback is left alone: only a
+  // change between playing and idle is acted on.
+  useEffect(() => {
+    const narrating = activeLine >= 0;
+    if (narrating === wasNarrating.current) return;
+    wasNarrating.current = narrating;
+
+    if (narrating) {
+      if (!isExpanded) {
+        openedByNarration.current = true;
+        setExpanded(true);
+      }
+      return;
+    }
+    if (openedByNarration.current) {
+      openedByNarration.current = false;
+      setExpanded(false);
+    }
+  }, [activeLine, isExpanded]);
+
+  // Follow the voice: bring the spoken line to the top of the panel, and for a
+  // line taller than the panel, creep through it as the words are read.
+  useEffect(() => {
+    if (activeLine < 0) return;
+    const box = boxes.current.get(activeLine);
+    if (!box) return;
+
+    const overflow = Math.max(0, box.height - viewHeight + TOP_GAP * 2);
+    const limit = Math.max(0, contentHeight - viewHeight);
+    const target = Math.min(Math.max(box.y - TOP_GAP + overflow * lineProgress, 0), limit);
+
+    if (Math.abs(target - lastTarget.current) < SCROLL_STEP) return;
+    lastTarget.current = target;
+    scroller.current?.scrollTo({ y: target, animated: true });
+  }, [activeLine, lineProgress, viewHeight, contentHeight]);
 
   return (
     <View className="gap-3 rounded-3xl px-5 py-4" style={{ backgroundColor: palette.panelScene }}>
@@ -52,12 +117,20 @@ export function ReadingPanel({
 
       <View>
         <ScrollView
-          style={{ maxHeight }}
+          ref={scroller}
+          style={{ maxHeight: viewHeight }}
           scrollEnabled={isExpanded}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={(_width, height) => setContentHeight(height)}
         >
-          <SceneText lines={lines} text={text} size={size} />
+          <SceneText
+            lines={lines}
+            text={text}
+            size={size}
+            activeLine={activeLine}
+            activeWord={activeWord}
+            onLineLayout={(index, y, height) => boxes.current.set(index, { y, height })}
+          />
         </ScrollView>
 
         {overflows && !isExpanded ? (
@@ -71,7 +144,10 @@ export function ReadingPanel({
 
       {overflows ? (
         <Pressable
-          onPress={() => setExpanded(!isExpanded)}
+          onPress={() => {
+            openedByNarration.current = false;
+            setExpanded(!isExpanded);
+          }}
           accessibilityRole="button"
           accessibilityLabel={isExpanded ? 'Collapse the story text' : 'Read the whole scene'}
           style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, alignSelf: 'flex-start' })}

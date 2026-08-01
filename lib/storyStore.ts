@@ -100,6 +100,7 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
 
     const hasNodeMedia = Boolean(result.imageUrl) || (result.audioUrls?.length ?? 0) > 0;
     if (nodeKey && hasNodeMedia) {
+      const audioArrived = (result.audioUrls?.length ?? 0) > 0;
       next = {
         ...next,
         nodes: next.nodes.map((node) =>
@@ -107,10 +108,10 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
             ? {
                 ...node,
                 imageUrl: result.imageUrl ?? node.imageUrl,
-                audioUrls:
-                  result.audioUrls && result.audioUrls.length > 0
-                    ? result.audioUrls
-                    : node.audioUrls,
+                audioUrls: audioArrived ? (result.audioUrls ?? node.audioUrls) : node.audioUrls,
+                // Timings belong to the clips they arrived with, so they are
+                // replaced together — never mixed across two recordings.
+                audioMarks: audioArrived ? (result.audioMarks ?? []) : node.audioMarks,
               }
             : node,
         ),
@@ -136,10 +137,12 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
         continue;
       }
       const current = merged[index];
+      const keepsAudio = incoming.audioUrls.length === 0;
       merged[index] = {
         ...incoming,
         imageUrl: incoming.imageUrl ?? current.imageUrl,
-        audioUrls: incoming.audioUrls.length > 0 ? incoming.audioUrls : current.audioUrls,
+        audioUrls: keepsAudio ? current.audioUrls : incoming.audioUrls,
+        audioMarks: keepsAudio ? current.audioMarks : incoming.audioMarks,
       };
       changed = true;
     }
