@@ -20,6 +20,9 @@ const STYLE_PREVIEWS: Record<StyleId, number> = {
   'pixel-art': require('@/assets/images/style-pixel.png'),
   storybook: require('@/assets/images/style-storybook.png'),
   'retro-print': require('@/assets/images/style-retro-print.png'),
+  realistic: require('@/assets/images/style-realistic.png'),
+  papercraft: require('@/assets/images/style-papercraft.png'),
+  futuristic: require('@/assets/images/style-futuristic.png'),
 };
 
 const COLUMNS = 3;

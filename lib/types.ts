@@ -14,7 +14,10 @@ export type StyleId =
   | 'noir-film'
   | 'pixel-art'
   | 'storybook'
-  | 'retro-print';
+  | 'retro-print'
+  | 'realistic'
+  | 'papercraft'
+  | 'futuristic';
 
 /**
  * The mood the story is written in. Optional on a story: with no theme the writer

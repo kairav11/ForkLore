@@ -15,8 +15,8 @@ export interface StyleOption {
 }
 
 /**
- * Nine treatments, each with a real sample in `assets/images/style-*.png` — the
- * same scene drawn nine ways, so the choice is made by eye rather than by name.
+ * Twelve treatments, each with a real sample in `assets/images/style-*.png` — the
+ * same scene drawn twelve ways, so the choice is made by eye rather than by name.
  */
 export const STYLES: readonly StyleOption[] = [
   {
@@ -72,6 +72,24 @@ export const STYLES: readonly StyleOption[] = [
     label: 'Retro Print',
     direction:
       'Risograph two-colour spot-ink print on off-white uncoated paper: fluorescent amber overprinted with deep violet-blue, visible misregistration, halftone dot texture, ink mottling, flat graphic shapes.',
+  },
+  {
+    id: 'realistic',
+    label: 'Realistic',
+    direction:
+      'Photorealistic cinematic photograph, not an illustration: shot on a full-frame camera with a 35mm lens at f/1.8, true-to-life skin, fabric and surface textures, natural shallow depth of field with soft background falloff, realistic lens bokeh and reflections, physically accurate lighting, fine sensor grain. Looks like real life.',
+  },
+  {
+    id: 'papercraft',
+    label: 'Papercraft',
+    direction:
+      'Handmade papercraft diorama photographed as a real three-dimensional object: everything cut, folded and glued from coloured cardstock, visible paper thickness at every cut edge, layered paper planes receding in depth, crisp craft-knife cuts and folded creases, soft drop shadows between layers, matte fibrous paper texture, warm studio light, shallow depth of field.',
+  },
+  {
+    id: 'futuristic',
+    label: 'Ultra Futuristic',
+    direction:
+      'Ultra futuristic science-fiction film still from a high-budget blockbuster: immaculate high-tech production design, brushed metal and glass, holographic cyan and amber interface glyphs floating in the air, volumetric light shafts and atmospheric haze, wet reflective floors with neon reflections, thin emissive strip lighting, anamorphic lens flares, cool teal shadows against a warm key light, cinematic colour grade.',
   },
 ] as const;
 
