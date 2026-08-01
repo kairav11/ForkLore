@@ -5,7 +5,7 @@ import { createStory, errorMessage } from '@/lib/api';
 import { ensureBranch } from '@/lib/branches';
 import { ensureMedia } from '@/lib/media';
 import { useStoryStore } from '@/lib/storyStore';
-import type { StyleId } from '@/lib/types';
+import type { StyleId, ThemeId } from '@/lib/types';
 import { ErrorState, LoadingState, type LoadingStep } from '@/components/StoryStatus';
 
 type Stage = 'writing' | 'painting' | 'ready';
@@ -39,6 +39,7 @@ export default function LoadingScreen() {
     setting: string;
     settingLabel?: string;
     style: StyleId;
+    theme?: ThemeId;
     prompt?: string;
     name?: string;
     voice?: string;
@@ -50,7 +51,7 @@ export default function LoadingScreen() {
   const [stage, setStage] = useState<Stage>('writing');
   const [attempt, setAttempt] = useState(0);
 
-  const { setting, settingLabel, style, prompt, name, voice, voiceName } = params;
+  const { setting, settingLabel, style, theme, prompt, name, voice, voiceName } = params;
   const placeLabel = settingLabel ?? 'Your story';
 
   useEffect(() => {
@@ -67,6 +68,8 @@ export default function LoadingScreen() {
         // Empty is allowed: the writer invents the premise instead.
         prompt: prompt ?? '',
         styleId: style,
+        // Empty is allowed too: the writer then picks its own register.
+        themeId: theme ?? null,
         ownerName: name,
         narratorVoiceId: voice,
         narratorLabel: voiceName,
@@ -99,7 +102,19 @@ export default function LoadingScreen() {
     return () => {
       cancelled = true;
     };
-  }, [setting, placeLabel, style, prompt, name, voice, voiceName, attempt, loadStory, router]);
+  }, [
+    setting,
+    placeLabel,
+    style,
+    theme,
+    prompt,
+    name,
+    voice,
+    voiceName,
+    attempt,
+    loadStory,
+    router,
+  ]);
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
 

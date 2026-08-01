@@ -3,6 +3,7 @@ import { FunctionsHttpError } from '@biltme/backend';
 import { bilt, isBackendConfigured } from '@/lib/bilt';
 import { STYLES, stylePrompt } from '@/lib/settings';
 import { SHARE_LINK_PREFIX } from '@/lib/share';
+import { themeById } from '@/lib/themes';
 import type {
   CreateStoryInput,
   Decision,
@@ -15,6 +16,7 @@ import type {
   StoryLine,
   StoryNode,
   StyleId,
+  ThemeId,
   WordMark,
 } from '@/lib/types';
 import { NARRATOR_DEMO_LINE, type NarratorOption } from '@/lib/voices';
@@ -322,6 +324,7 @@ function mapStory(row: StoryRow, nodeRows: NodeRow[]): Story {
  * gets to them, which keeps every backend call comfortably short.
  */
 export async function createStory(input: CreateStoryInput): Promise<Story> {
+  const theme = themeById(input.themeId);
   const created = await invoke<{ id?: string }>('story-create', {
     settingId: input.settingId,
     settingLabel: input.settingLabel,
@@ -329,6 +332,10 @@ export async function createStory(input: CreateStoryInput): Promise<Story> {
     // The full treatment, not just the name: it is what the images are drawn to.
     styleLabel: stylePrompt(input.styleId),
     prompt: input.prompt,
+    themeId: theme?.id ?? '',
+    themeLabel: theme?.label ?? '',
+    // The tone brief every scene of this story is held to.
+    themeDirection: theme?.direction ?? '',
     ownerName: input.ownerName ?? '',
     narratorVoiceId: input.narratorVoiceId ?? '',
     narratorLabel: input.narratorLabel ?? '',
@@ -364,17 +371,24 @@ export async function fetchNarratorPreviews(
 
 /**
  * One story premise for the setup screen's spark button. `avoid` is whatever is
- * already in the field, so tapping again gives a different idea.
+ * already in the field, so tapping again gives a different idea, and the theme is
+ * the mood the premise has to fit.
  */
-export async function generateIdea(
-  settingId: string | null,
-  settingLabel: string,
-  avoid?: string,
-): Promise<string> {
+export async function generateIdea(request: {
+  settingId: string | null;
+  settingLabel: string;
+  themeId?: ThemeId | null;
+  avoid?: string;
+}): Promise<string> {
+  const theme = themeById(request.themeId);
+
   const result = await invoke<{ idea?: string }>('story-idea', {
-    settingId: settingId ?? '',
-    settingLabel,
-    avoid: avoid ?? '',
+    settingId: request.settingId ?? '',
+    settingLabel: request.settingLabel,
+    themeId: theme?.id ?? '',
+    themeLabel: theme?.label ?? '',
+    themeDirection: theme?.direction ?? '',
+    avoid: request.avoid ?? '',
   });
 
   const idea = (result.idea ?? '').trim();

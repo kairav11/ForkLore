@@ -14,12 +14,14 @@ import { BookOpen, KeyRound, Sparkles } from 'lucide-react-native';
 import { errorMessage, generateIdea } from '@/lib/api';
 import type { PlaceOption } from '@/lib/places';
 import { palette } from '@/lib/theme';
+import type { ThemeOption } from '@/lib/themes';
 import type { StyleId } from '@/lib/types';
 import { NARRATORS, type NarratorOption } from '@/lib/voices';
 import { FieldCard } from '@/components/FieldCard';
 import { NarratorPicker } from '@/components/NarratorPicker';
 import { SettingPicker } from '@/components/SettingPicker';
 import { StylePicker } from '@/components/StylePicker';
+import { ThemePicker } from '@/components/ThemePicker';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { FieldInput } from '@/components/ui/FieldInput';
@@ -36,6 +38,7 @@ export default function SetupScreen() {
   const [isPromptFocused, setPromptFocused] = useState(false);
   const [isThinking, setIsThinking] = useState(false);
   const [ideaError, setIdeaError] = useState<string | null>(null);
+  const [theme, setTheme] = useState<ThemeOption | null>(null);
   const [name, setName] = useState('');
   const [isNameFocused, setNameFocused] = useState(false);
   const [styleId, setStyleId] = useState<StyleId>('flat-illustrated');
@@ -55,6 +58,7 @@ export default function SetupScreen() {
         setting: place.id,
         settingLabel: place.label,
         style: styleId,
+        theme: theme?.id ?? '',
         prompt: prompt.trim(),
         name: name.trim(),
         voice: narrator.id,
@@ -67,7 +71,14 @@ export default function SetupScreen() {
     setIsThinking(true);
     setIdeaError(null);
     try {
-      setPrompt(await generateIdea(place?.id ?? null, place?.label ?? '', prompt.trim()));
+      setPrompt(
+        await generateIdea({
+          settingId: place?.id ?? null,
+          settingLabel: place?.label ?? '',
+          themeId: theme?.id ?? null,
+          avoid: prompt.trim(),
+        }),
+      );
     } catch (cause) {
       setIdeaError(errorMessage(cause));
     } finally {
@@ -151,6 +162,17 @@ export default function SetupScreen() {
           </FieldCard>
 
           <FieldCard
+            label="Mood — optional"
+            hint={
+              theme
+                ? `${theme.hint} Tap it again to clear.`
+                : 'Pick one and both the suggested ideas and the writing follow it.'
+            }
+          >
+            <ThemePicker value={theme?.id ?? null} onSelect={setTheme} />
+          </FieldCard>
+
+          <FieldCard
             label="Your story idea — optional"
             isActive={isPromptFocused}
             error={ideaError}
@@ -171,7 +193,11 @@ export default function SetupScreen() {
 
             <View className="flex-row items-center justify-between">
               <Mono className="text-[9px] tracking-[2px] uppercase">
-                {prompt.trim().length === 0 ? 'Surprise me works too' : 'Your words'}
+                {prompt.trim().length > 0
+                  ? 'Your words'
+                  : theme
+                    ? `${theme.label} · surprise me works too`
+                    : 'Surprise me works too'}
               </Mono>
 
               <Pressable

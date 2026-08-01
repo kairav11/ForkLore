@@ -16,6 +16,20 @@ export type StyleId =
   | 'storybook'
   | 'retro-print';
 
+/**
+ * The mood the story is written in. Optional on a story: with no theme the writer
+ * picks its own register. Defined once in `lib/themes.ts`.
+ */
+export type ThemeId =
+  | 'funny'
+  | 'scary'
+  | 'gross'
+  | 'mystery'
+  | 'heartfelt'
+  | 'absurd'
+  | 'romantic'
+  | 'tense';
+
 export interface StoryChoice {
   /** Letter used in the path string: a, b, ... */
   letter: string;
@@ -102,6 +116,8 @@ export interface CreateStoryInput {
   /** May be empty — the writer then invents the premise. */
   prompt: string;
   styleId: StyleId;
+  /** Mood of the story, or null to let the writer choose its own register. */
+  themeId?: ThemeId | null;
   /** Shown to friends on the match screen. */
   ownerName?: string;
   /** ElevenLabs voice that narrates every scene of this story. */
