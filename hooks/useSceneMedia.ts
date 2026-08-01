@@ -1,7 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { ensureMedia, mediaKey } from '@/lib/media';
-import { useStoryStore } from '@/lib/storyStore';
+import { hasScene, useStoryStore } from '@/lib/storyStore';
 import type { Story, StoryNode } from '@/lib/types';
 
 interface SceneMedia {
@@ -21,10 +21,15 @@ export function useSceneMedia(story: Story | null, node: StoryNode | null): Scen
   const nodeId = node?.id ?? null;
   const hasImage = Boolean(node?.imageUrl);
   const hasAudio = (node?.audioUrls.length ?? 0) > 0;
-  const nextIds = (node?.choices ?? [])
-    .map((choice) => choice.nextNodeId)
-    .filter((value): value is string => value !== null)
-    .join(',');
+
+  // Only scenes that have actually been written can have art made for them.
+  const nextIds = useMemo(() => {
+    if (!story || !node) return '';
+    return node.choices
+      .map((choice) => choice.nextNodeId)
+      .filter((value): value is string => value !== null && hasScene(story, value))
+      .join(',');
+  }, [story, node]);
 
   const isPaintingScene = useStoryStore(
     (state) => !hasImage && (state.pendingMedia[mediaKey('image', nodeId ?? '-')] ?? false),

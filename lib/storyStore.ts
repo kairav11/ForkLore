@@ -7,6 +7,11 @@ export function findNode(story: Story, nodeId: string): StoryNode | null {
   return story.nodes.find((node) => node.id === nodeId) ?? null;
 }
 
+/** True once a scene has actually been written (not just referenced by a choice). */
+export function hasScene(story: Story, nodeId: string): boolean {
+  return story.nodes.some((node) => node.id === nodeId && node.text.trim().length > 0);
+}
+
 interface StoryStoreState {
   story: Story | null;
   mode: PlayMode;
@@ -15,12 +20,19 @@ interface StoryStoreState {
   ambientEnabled: boolean;
   /** Keyed by `target:nodeKey` while that asset is being generated. */
   pendingMedia: Record<string, boolean>;
+  /** Keyed by scene key while the scenes after it are being written. */
+  pendingBranches: Record<string, boolean>;
+  /** Keyed by scene key when writing the scenes after it failed. */
+  branchErrors: Record<string, string>;
   loadStory: (story: Story, mode: PlayMode) => void;
   choose: (choiceIndex: number) => void;
   restart: () => void;
   setAmbientEnabled: (enabled: boolean) => void;
   setMediaPending: (key: string, pending: boolean) => void;
   applyMedia: (storyId: string, result: MediaResult, nodeKey?: string) => void;
+  addNodes: (storyId: string, nodes: StoryNode[]) => void;
+  setBranchPending: (nodeKey: string, pending: boolean) => void;
+  setBranchError: (nodeKey: string, message: string | null) => void;
   clear: () => void;
 }
 
@@ -31,6 +43,8 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
   decisions: [],
   ambientEnabled: true,
   pendingMedia: {},
+  pendingBranches: {},
+  branchErrors: {},
 
   loadStory: (story, mode) => {
     set({ story, mode, currentNodeId: story.startNodeId, decisions: [] });
@@ -45,7 +59,7 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
     if (!node || !choice) return;
 
     const nextId = choice.nextNodeId;
-    if (!nextId || !findNode(story, nextId)) return;
+    if (!nextId || !hasScene(story, nextId)) return;
 
     const decision: Decision = {
       nodeId: node.id,
@@ -106,8 +120,58 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
     if (next !== story) set({ story: next });
   },
 
+  /** Folds newly written scenes into the story, keeping any media already held. */
+  addNodes: (storyId, nodes) => {
+    const { story } = get();
+    if (!story || story.id !== storyId || nodes.length === 0) return;
+
+    const merged = [...story.nodes];
+    let changed = false;
+
+    for (const incoming of nodes) {
+      const index = merged.findIndex((node) => node.id === incoming.id);
+      if (index === -1) {
+        merged.push(incoming);
+        changed = true;
+        continue;
+      }
+      const current = merged[index];
+      merged[index] = {
+        ...incoming,
+        imageUrl: incoming.imageUrl ?? current.imageUrl,
+        audioUrls: incoming.audioUrls.length > 0 ? incoming.audioUrls : current.audioUrls,
+      };
+      changed = true;
+    }
+
+    if (changed) set({ story: { ...story, nodes: merged } });
+  },
+
+  setBranchPending: (nodeKey, pending) => {
+    const { pendingBranches } = get();
+    if ((pendingBranches[nodeKey] ?? false) === pending) return;
+    set({ pendingBranches: { ...pendingBranches, [nodeKey]: pending } });
+  },
+
+  setBranchError: (nodeKey, message) => {
+    const { branchErrors } = get();
+    if ((branchErrors[nodeKey] ?? null) === message) return;
+    const next = { ...branchErrors };
+    if (message === null) delete next[nodeKey];
+    else next[nodeKey] = message;
+    set({ branchErrors: next });
+  },
+
   clear: () =>
-    set({ story: null, currentNodeId: null, decisions: [], mode: 'owner', pendingMedia: {} }),
+    set({
+      story: null,
+      currentNodeId: null,
+      decisions: [],
+      mode: 'owner',
+      pendingMedia: {},
+      pendingBranches: {},
+      branchErrors: {},
+    }),
 }));
 
 export function useCurrentNode(): StoryNode | null {

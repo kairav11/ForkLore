@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
 import { createStory, errorMessage } from '@/lib/api';
+import { ensureBranch } from '@/lib/branches';
 import { ensureMedia } from '@/lib/media';
 import { settingLabel } from '@/lib/settings';
 import { useStoryStore } from '@/lib/storyStore';
@@ -11,7 +12,7 @@ import { ErrorState, LoadingState, type LoadingStep } from '@/components/StorySt
 type Stage = 'writing' | 'painting' | 'ready';
 
 const STAGE_TITLES: Record<Stage, string> = {
-  writing: 'Building your story…',
+  writing: 'Writing your opening…',
   painting: 'Painting the first scene…',
   ready: 'Opening your story…',
 };
@@ -19,7 +20,7 @@ const STAGE_TITLES: Record<Stage, string> = {
 function stepsFor(stage: Stage): LoadingStep[] {
   return [
     {
-      label: 'Writing the branches',
+      label: 'Writing the opening scene',
       state: stage === 'writing' ? 'active' : 'done',
     },
     {
@@ -66,10 +67,11 @@ export default function LoadingScreen() {
       loadStory(story, 'owner');
       setStage('painting');
 
-      // Ambience and narration keep generating in the background; the reader
-      // picks them up as soon as they land.
+      // Ambience, narration and the scenes behind the first two choices keep
+      // generating in the background; the reader picks them up as they land.
       void ensureMedia(story.id, 'ambient');
       void ensureMedia(story.id, 'narration', story.startNodeId);
+      void ensureBranch(story.id, story.startNodeId);
 
       await Promise.all([
         ensureMedia(story.id, 'background'),

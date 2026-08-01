@@ -9,6 +9,8 @@ interface ChoiceButtonProps {
   label: string;
   /** The first option gets the warmer, more inviting treatment. */
   emphasis?: 'primary' | 'secondary';
+  /** The scene behind this choice is not written yet. */
+  disabled?: boolean;
   onPress: () => void;
 }
 
@@ -17,6 +19,7 @@ export function ChoiceButton({
   letter,
   label,
   emphasis = 'secondary',
+  disabled = false,
   onPress,
 }: ChoiceButtonProps) {
   const isPrimary = emphasis === 'primary';
@@ -24,11 +27,13 @@ export function ChoiceButton({
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityState={{ disabled }}
       style={({ pressed }) => ({
-        transform: [{ scale: pressed ? 0.985 : 1 }],
-        opacity: pressed ? 0.92 : 1,
+        transform: [{ scale: pressed && !disabled ? 0.985 : 1 }],
+        opacity: disabled ? 0.45 : pressed ? 0.92 : 1,
       })}
     >
       <View

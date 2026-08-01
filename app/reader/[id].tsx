@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Text } from 'heroui-native';
-import { Pause, Play, Volume2, VolumeX, X } from 'lucide-react-native';
+import { Pause, Play, RefreshCw, Volume2, VolumeX, X } from 'lucide-react-native';
 
 import { findNode, useCurrentNode, useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
@@ -11,6 +11,7 @@ import type { PlayMode } from '@/lib/types';
 import { useCrossfade } from '@/hooks/useCrossfade';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
 import { useNarration } from '@/hooks/useNarration';
+import { useSceneBranches } from '@/hooks/useSceneBranches';
 import { useSceneMedia } from '@/hooks/useSceneMedia';
 import { ChoiceButton } from '@/components/ChoiceButton';
 import { MediaHint } from '@/components/MediaHint';
@@ -46,6 +47,7 @@ export default function ReaderScreen() {
   const audioUrls = useMemo(() => shownNode?.audioUrls ?? [], [shownNode]);
   const narration = useNarration(audioUrls);
   const { isPaintingScene, isRecordingNarration } = useSceneMedia(story, shownNode);
+  const branches = useSceneBranches(story, shownNode);
 
   if (error) {
     return (
@@ -173,6 +175,7 @@ export default function ReaderScreen() {
             ) : null}
 
             {isPaintingScene ? <MediaHint kind="art" /> : null}
+            {branches.isWriting ? <MediaHint kind="writing" /> : null}
           </View>
 
           <View className="gap-3">
@@ -182,12 +185,30 @@ export default function ReaderScreen() {
                 letter={choice.letter}
                 label={choice.label}
                 emphasis={index === 0 ? 'primary' : 'secondary'}
+                disabled={!branches.isReady}
                 onPress={() => {
                   narration.stop();
                   choose(index);
                 }}
               />
             ))}
+
+            {branches.error && !branches.isReady ? (
+              <View className="gap-2">
+                <Text className="text-muted text-sm">{branches.error}</Text>
+                <Button
+                  size="sm"
+                  variant="tertiary"
+                  className="border-accent/35 h-11 self-start rounded-full border px-4"
+                  onPress={branches.retry}
+                >
+                  <RefreshCw size={16} color={palette.accent} />
+                  <Button.Label className="text-accent text-sm font-semibold">
+                    Write the next scenes
+                  </Button.Label>
+                </Button>
+              </View>
+            ) : null}
           </View>
         </AnimatedView>
       </View>

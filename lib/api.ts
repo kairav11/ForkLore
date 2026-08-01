@@ -179,7 +179,11 @@ function mapStory(row: StoryRow, nodeRows: NodeRow[]): Story {
 /* Story data                                                        */
 /* ------------------------------------------------------------------ */
 
-/** Generates a new story from the setting, idea and art style. */
+/**
+ * Generates a new story from the setting, idea and art style. Only the opening
+ * scene comes back — the branches after it are written by `expandBranch` as the
+ * reader gets to them, which keeps every backend call comfortably short.
+ */
 export async function createStory(input: CreateStoryInput): Promise<Story> {
   const created = await invoke<{ id?: string }>('story-create', {
     settingId: input.settingId,
@@ -221,6 +225,16 @@ export async function getStory(idOrCode: string): Promise<Story> {
 
   if (nodesError) throw new ApiError('We could not load the scenes of that story.');
   return mapStory(storyRow, nodeRows ?? []);
+}
+
+/**
+ * Writes the two scenes that follow `nodeKey`, or returns them if they were
+ * written already. Safe to call repeatedly and from several devices: the backend
+ * keeps the first version of every scene so a shared story never changes.
+ */
+export async function expandBranch(storyId: string, nodeKey: string): Promise<StoryNode[]> {
+  const result = await invoke<{ nodes?: NodeRow[] }>('story-continue', { storyId, nodeKey });
+  return (result.nodes ?? []).map(mapNode);
 }
 
 /**
