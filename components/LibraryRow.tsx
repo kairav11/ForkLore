@@ -4,11 +4,13 @@ import { BookOpen, ChevronRight, Trash2 } from 'lucide-react-native';
 
 import {
   entryPlaceLabel,
+  entryShareCode,
   entryStatusLabel,
   entryToneLabel,
   type LibraryEntry,
 } from '@/lib/library';
 import { palette } from '@/lib/theme';
+import { ShareStoryButton } from '@/components/ShareStoryButton';
 import { Body, Mono } from '@/components/ui/Text';
 
 interface LibraryRowProps {
@@ -16,6 +18,8 @@ interface LibraryRowProps {
   onPress: () => void;
   /** Shown as a small bin on the full list, left out of the home panel. */
   onRemove?: () => void;
+  /** Prints the story's share code beside its progress. */
+  showCode?: boolean;
 }
 
 const COVER_WIDTH = 46;
@@ -24,11 +28,13 @@ const COVER_HEIGHT = 60;
 /**
  * One story in the reader's own list: its backdrop as a thumbnail, the title,
  * where it happens, and how far they got. Tapping it reopens the story at the
- * scene it was left on.
+ * scene it was left on; the share button sends its code to a friend.
  */
-export function LibraryRow({ entry, onPress, onRemove }: LibraryRowProps) {
+export function LibraryRow({ entry, onPress, onRemove, showCode = false }: LibraryRowProps) {
   const tone = entryToneLabel(entry);
   const meta = [entryPlaceLabel(entry), tone].filter((part): part is string => Boolean(part));
+  const code = entryShareCode(entry);
+  const status = showCode ? `${entryStatusLabel(entry)} · ${code}` : entryStatusLabel(entry);
 
   return (
     <Pressable
@@ -75,23 +81,27 @@ export function LibraryRow({ entry, onPress, onRemove }: LibraryRowProps) {
             className="text-[9px] tracking-[2px] uppercase"
             color={entry.isFinished ? palette.accent : undefined}
           >
-            {entryStatusLabel(entry)}
+            {status}
           </Mono>
         </View>
 
-        {onRemove ? (
-          <Pressable
-            onPress={onRemove}
-            accessibilityRole="button"
-            accessibilityLabel={`Remove ${entry.title ?? 'this story'} from your list`}
-            hitSlop={10}
-            style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 6 })}
-          >
-            <Trash2 size={16} color={palette.muted} />
-          </Pressable>
-        ) : (
-          <ChevronRight size={16} color={palette.muted} />
-        )}
+        <View className="flex-row items-center gap-1">
+          <ShareStoryButton title={entry.title} code={code} />
+
+          {onRemove ? (
+            <Pressable
+              onPress={onRemove}
+              accessibilityRole="button"
+              accessibilityLabel={`Remove ${entry.title ?? 'this story'} from your list`}
+              hitSlop={10}
+              style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1, padding: 6 })}
+            >
+              <Trash2 size={16} color={palette.muted} />
+            </Pressable>
+          ) : (
+            <ChevronRight size={16} color={palette.muted} />
+          )}
+        </View>
       </View>
     </Pressable>
   );

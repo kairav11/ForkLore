@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Pressable, Share, View } from 'react-native';
+import { Pressable, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Check, Copy, Link2, Share2 } from 'lucide-react-native';
 
-import { shareCodeFor, shareLinkFor } from '@/lib/share';
+import { shareCodeFor, shareLinkFor, shareStory } from '@/lib/share';
 import { palette } from '@/lib/theme';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
 import { GlowBackground } from '@/components/GlowBackground';
@@ -91,9 +91,9 @@ export default function ShareScreen() {
   };
 
   const openShareSheet = async () => {
-    await Share.share({
-      message: `Read my ForkLore story and make your own choices: ${link}\n\nOr enter the code: ${code}`,
-    });
+    const outcome = await shareStory({ title: story.title, code });
+    // On the web there may be no share sheet; the message lands on the clipboard instead.
+    if (outcome === 'copied') setCopied('link');
   };
 
   return (

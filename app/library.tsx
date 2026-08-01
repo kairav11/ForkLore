@@ -24,6 +24,7 @@ export default function LibraryScreen() {
   const renderItem = ({ item }: { item: LibraryEntry }) => (
     <LibraryRow
       entry={item}
+      showCode
       onPress={() => router.push({ pathname: '/reader/[id]', params: entryRouteParams(item) })}
       onRemove={() => remove(item.id)}
     />
@@ -43,9 +44,15 @@ export default function LibraryScreen() {
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={
           entries.length > 0 ? (
-            <Mono className="pb-1 text-[9px] tracking-[2px] uppercase">
-              {`${entries.length} stor${entries.length === 1 ? 'y' : 'ies'} on this device`}
-            </Mono>
+            <View className="gap-1 pb-2">
+              <Mono className="text-[9px] tracking-[2px] uppercase">
+                {`${entries.length} stor${entries.length === 1 ? 'y' : 'ies'} on this device`}
+              </Mono>
+              <Body className="text-muted text-[13px] leading-5">
+                Tap a story to carry on reading. Share sends its link and code, so a friend reads
+                the same story and makes their own choices.
+              </Body>
+            </View>
           ) : null
         }
         ListEmptyComponent={

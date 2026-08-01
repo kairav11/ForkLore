@@ -277,6 +277,11 @@ export function entryStatusLabel(entry: LibraryEntry): string {
   return `Decision ${Math.min(entry.path.length + 1, DECISIONS_PER_STORY)} of ${DECISIONS_PER_STORY}`;
 }
 
+/** The code a friend types to read this story; the id still resolves if it is missing. */
+export function entryShareCode(entry: LibraryEntry): string {
+  return entry.shareCode ?? entry.id;
+}
+
 /**
  * Route params that reopen a story where it was left. The reader replays the
  * stored letters and, for a finished story, lands on its ending.
