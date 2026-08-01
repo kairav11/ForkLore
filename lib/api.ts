@@ -93,11 +93,92 @@ interface NodeRow {
   is_ending: boolean;
 }
 
-const STORY_COLUMNS =
-  'id,share_code,setting_id,style_id,title,owner_name,background_image_url,background_audio_url,start_node_key';
-const NODE_COLUMNS = 'node_key,depth,text,image_url,audio_urls,choices,is_ending';
+/** Shape returned by the `story_read` database function. */
+interface StoryRead {
+  story: StoryRow | null;
+  nodes: NodeRow[] | null;
+}
 
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function toStoryRow(value: unknown): StoryRow | null {
+  if (typeof value !== 'object' || value === null) return null;
+
+  const id = Reflect.get(value, 'id');
+  const shareCode = Reflect.get(value, 'share_code');
+  const settingId = Reflect.get(value, 'setting_id');
+  const styleId = Reflect.get(value, 'style_id');
+  const startNodeKey = Reflect.get(value, 'start_node_key');
+  if (
+    typeof id !== 'string' ||
+    typeof shareCode !== 'string' ||
+    typeof settingId !== 'string' ||
+    typeof styleId !== 'string' ||
+    typeof startNodeKey !== 'string'
+  ) {
+    return null;
+  }
+
+  const title = Reflect.get(value, 'title');
+  const ownerName = Reflect.get(value, 'owner_name');
+  const backgroundImageUrl = Reflect.get(value, 'background_image_url');
+  const backgroundAudioUrl = Reflect.get(value, 'background_audio_url');
+
+  return {
+    id,
+    share_code: shareCode,
+    setting_id: settingId,
+    style_id: styleId,
+    title: typeof title === 'string' ? title : null,
+    owner_name: typeof ownerName === 'string' ? ownerName : null,
+    background_image_url: typeof backgroundImageUrl === 'string' ? backgroundImageUrl : null,
+    background_audio_url: typeof backgroundAudioUrl === 'string' ? backgroundAudioUrl : null,
+    start_node_key: startNodeKey,
+  };
+}
+
+function toNodeRow(value: unknown): NodeRow | null {
+  if (typeof value !== 'object' || value === null) return null;
+
+  const nodeKey = Reflect.get(value, 'node_key');
+  const depth = Reflect.get(value, 'depth');
+  const text = Reflect.get(value, 'text');
+  const isEnding = Reflect.get(value, 'is_ending');
+  if (
+    typeof nodeKey !== 'string' ||
+    typeof depth !== 'number' ||
+    typeof text !== 'string' ||
+    typeof isEnding !== 'boolean'
+  ) {
+    return null;
+  }
+
+  const imageUrl = Reflect.get(value, 'image_url');
+  const audioUrls = Reflect.get(value, 'audio_urls');
+
+  return {
+    node_key: nodeKey,
+    depth,
+    text,
+    image_url: typeof imageUrl === 'string' ? imageUrl : null,
+    audio_urls: Array.isArray(audioUrls)
+      ? audioUrls.filter((item): item is string => typeof item === 'string')
+      : null,
+    choices: Reflect.get(value, 'choices'),
+    is_ending: isEnding,
+  };
+}
+
+/** Tolerantly parses the `story_read` RPC payload, which arrives typed as `any`. */
+function toStoryRead(value: unknown): StoryRead {
+  if (typeof value !== 'object' || value === null) return { story: null, nodes: null };
+
+  const story = toStoryRow(Reflect.get(value, 'story'));
+  const nodesRaw = Reflect.get(value, 'nodes');
+  const nodes = Array.isArray(nodesRaw)
+    ? nodesRaw.map(toNodeRow).filter((node): node is NodeRow => node !== null)
+    : null;
+
+  return { story, nodes };
+}
 
 function isSettingId(value: string): value is SettingId {
   return SETTINGS.some((option) => option.id === value);
@@ -213,26 +294,18 @@ export async function getStory(idOrCode: string): Promise<Story> {
   const value = idOrCode.trim();
   if (value.length === 0) throw new ApiError('We could not find that story.');
 
-  const query = bilt.from('stories').select(STORY_COLUMNS);
-  const { data: storyRow, error } = await (
-    UUID_PATTERN.test(value) ? query.eq('id', value) : query.eq('share_code', value.toUpperCase())
-  ).maybeSingle<StoryRow>();
+  // Reads go through the story_read database function: the app's public key has
+  // no direct table access, so this one call returns the story and its scenes.
+  const { data, error } = await bilt.rpc('story_read', { p_id_or_code: value });
 
   if (error) throw new ApiError('We could not load that story. Please try again.');
-  if (!storyRow) {
+
+  const read = toStoryRead(data);
+  if (!read.story) {
     throw new ApiError('We could not find a story with that code. Check it and try again.');
   }
 
-  const { data: nodeRows, error: nodesError } = await bilt
-    .from('story_nodes')
-    .select(NODE_COLUMNS)
-    .eq('story_id', storyRow.id)
-    .order('depth', { ascending: true })
-    .order('node_key', { ascending: true })
-    .returns<NodeRow[]>();
-
-  if (nodesError) throw new ApiError('We could not load the scenes of that story.');
-  return mapStory(storyRow, nodeRows ?? []);
+  return mapStory(read.story, read.nodes ?? []);
 }
 
 /**
