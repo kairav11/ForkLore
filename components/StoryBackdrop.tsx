@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { useWindowDimensions, View } from 'react-native';
+import { StyleSheet, useWindowDimensions, View } from 'react-native';
 import { Image } from 'expo-image';
 
 import { LinearGradient } from '@/components/ui/primitives/LinearGradient';
@@ -16,9 +16,11 @@ interface StoryBackdropProps {
 
 /**
  * The setting's background image fills the screen and stays fixed for the whole
- * story, with per-scene artwork crossfading over it via `underlay`. A top scrim
- * keeps the controls legible, and a deep bottom gradient lets story text sit
- * straight on the artwork without a boxed-in card.
+ * story, with per-scene artwork crossfading over it via `underlay`.
+ *
+ * Three layers keep text legible over every generated image, bright or dark: a
+ * flat charcoal veil across the whole frame, a scrim under the top controls, and
+ * a deeper gradient toward the bottom where the story panel and choices sit.
  */
 export function StoryBackdrop({
   imageUrl,
@@ -28,6 +30,7 @@ export function StoryBackdrop({
 }: StoryBackdropProps) {
   const { width, height } = useWindowDimensions();
   const fill = { position: 'absolute', left: 0, top: 0, width, height } as const;
+  const isStrong = overlay === 'strong';
 
   return (
     <View className="bg-background flex-1">
@@ -49,23 +52,32 @@ export function StoryBackdrop({
 
       {underlay}
 
-      {/* Top scrim for the floating controls. */}
+      {/* Flat veil: bright artwork (strobes, neon) never washes out the type. */}
+      <View
+        pointerEvents="none"
+        style={[
+          StyleSheet.absoluteFillObject,
+          { backgroundColor: isStrong ? 'rgba(20, 21, 26, 0.62)' : 'rgba(20, 21, 26, 0.42)' },
+        ]}
+      />
+
+      {/* Scrim under the floating controls. */}
       <LinearGradient
         pointerEvents="none"
         colors={[palette.scrim, palette.transparent]}
         locations={[0, 1]}
-        style={{ position: 'absolute', left: 0, top: 0, width, height: height * 0.28 }}
+        style={{ position: 'absolute', left: 0, top: 0, width, height: height * 0.26 }}
       />
 
-      {/* Reading gradient: art stays visible up top, text sits on near-black. */}
+      {/* Bottom weight: the story panel and the choice pills sit on near-black. */}
       <LinearGradient
         pointerEvents="none"
         colors={
-          overlay === 'strong'
-            ? [palette.scrim, palette.scrimStrong, palette.backgroundDeep]
-            : [palette.transparent, palette.scrim, palette.scrimStrong]
+          isStrong
+            ? [palette.transparent, palette.scrim, palette.scrimStrong]
+            : [palette.transparent, palette.scrimSoft, palette.scrim]
         }
-        locations={overlay === 'strong' ? [0, 0.45, 1] : [0.28, 0.6, 0.92]}
+        locations={isStrong ? [0.2, 0.55, 1] : [0.3, 0.62, 1]}
         style={{ ...fill }}
       />
 

@@ -1,32 +1,26 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, TextInput, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import { useRouter } from 'expo-router';
-import {
-  Button,
-  Description,
-  FieldError,
-  Input,
-  Label,
-  Spinner,
-  Text,
-  TextField,
-} from 'heroui-native';
 import { ClipboardPaste, DoorOpen } from 'lucide-react-native';
 
 import { errorMessage, getStory } from '@/lib/api';
 import { parseShareInput } from '@/lib/share';
 import { useStoryStore } from '@/lib/storyStore';
-import { palette } from '@/lib/theme';
+import { fonts, palette } from '@/lib/theme';
+import { FieldCard } from '@/components/FieldCard';
 import { GlowBackground } from '@/components/GlowBackground';
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
+import { Body } from '@/components/ui/Text';
 
 export default function EnterSharedStoryScreen() {
   const router = useRouter();
   const loadStory = useStoryStore((state) => state.loadStory);
 
   const [input, setInput] = useState('');
+  const [isFocused, setFocused] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -72,54 +66,55 @@ export default function EnterSharedStoryScreen() {
           <ScreenHeader title="Shared story" onBack={() => router.back()} />
 
           <View className="gap-3">
-            <Display className="text-[34px] leading-[42px]">Read your friend&apos;s story</Display>
-            <Text className="text-muted text-base leading-7">
+            <Display className="text-[34px] leading-[40px]">Read your friend&apos;s story</Display>
+            <Body className="text-muted text-[15px] leading-7">
               Same setting, same scenes — your own decisions. At the end you find out how closely
               the two of you matched.
-            </Text>
+            </Body>
           </View>
 
-          <TextField isInvalid={error !== null}>
-            <Label className="text-base">Story code or link</Label>
-            <Input
+          <FieldCard
+            label="Story code or link"
+            isActive={isFocused}
+            error={error}
+            hint="Paste the whole link too — we will find the code in it."
+          >
+            <TextInput
               value={input}
               onChangeText={(text) => {
                 setInput(text);
                 if (error) setError(null);
               }}
+              onFocus={() => setFocused(true)}
+              onBlur={() => setFocused(false)}
               placeholder="8FJ3KD"
+              placeholderTextColor={palette.placeholder}
               autoCapitalize="characters"
               autoCorrect={false}
-              className="h-14 rounded-2xl text-xl tracking-[3px]"
               onSubmitEditing={() => void openStory()}
+              style={{
+                height: 34,
+                fontFamily: fonts.monoBold,
+                fontSize: 22,
+                letterSpacing: 4,
+                color: palette.foreground,
+              }}
             />
-            {error ? (
-              <FieldError>{error}</FieldError>
-            ) : (
-              <Description>Paste the whole link too — we will find the code in it.</Description>
-            )}
-          </TextField>
+          </FieldCard>
 
-          <View className="gap-2">
-            <Button
-              size="lg"
-              className="h-14 rounded-2xl"
-              isDisabled={isOpening}
+          <View className="gap-1">
+            <ActionButton
+              label={isOpening ? 'Opening story…' : 'Open story'}
+              icon={DoorOpen}
+              disabled={isOpening}
               onPress={() => void openStory()}
-            >
-              {isOpening ? (
-                <Spinner size="sm" color={palette.accentForeground} />
-              ) : (
-                <DoorOpen size={20} color={palette.accentForeground} />
-              )}
-              <Button.Label className="text-lg font-semibold">
-                {isOpening ? 'Opening story…' : 'Open Story'}
-              </Button.Label>
-            </Button>
-            <Button size="md" variant="ghost" onPress={() => void pasteFromClipboard()}>
-              <ClipboardPaste size={16} color={palette.muted} />
-              <Button.Label className="text-muted text-base">Paste from clipboard</Button.Label>
-            </Button>
+            />
+            <ActionButton
+              label="Paste from clipboard"
+              variant="ghost"
+              icon={ClipboardPaste}
+              onPress={() => void pasteFromClipboard()}
+            />
           </View>
         </ScrollView>
       </KeyboardAvoidingView>

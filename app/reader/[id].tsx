@@ -2,8 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Text } from 'heroui-native';
-import { Pause, Play, RefreshCw, Volume2, VolumeX, X } from 'lucide-react-native';
+import { RefreshCw, Volume2, VolumeX, X } from 'lucide-react-native';
 
 import { findNode, useCurrentNode, useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
@@ -15,10 +14,15 @@ import { useSceneBranches } from '@/hooks/useSceneBranches';
 import { useSceneMedia } from '@/hooks/useSceneMedia';
 import { ChoiceButton } from '@/components/ChoiceButton';
 import { MediaHint } from '@/components/MediaHint';
-import { SceneProgress } from '@/components/SceneProgress';
+import { NarrationPill } from '@/components/NarrationPill';
+import { PathLine } from '@/components/PathLine';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
+import { ActionButton } from '@/components/ui/ActionButton';
+import { Display } from '@/components/ui/Display';
+import { IconButton } from '@/components/ui/IconButton';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
+import { Body, Mono } from '@/components/ui/Text';
 
 const DECISIONS_PER_STORY = 3;
 
@@ -48,6 +52,12 @@ export default function ReaderScreen() {
   const narration = useNarration(audioUrls);
   const { isPaintingScene, isRecordingNarration } = useSceneMedia(story, shownNode);
   const branches = useSceneBranches(story, shownNode);
+
+  /** Decisions so far as option indexes, for the branching-path indicator. */
+  const takenPath = useMemo(
+    () => decisions.map((decision) => (decision.choiceLetter.toLowerCase() === 'a' ? 0 : 1)),
+    [decisions],
+  );
 
   if (error) {
     return (
@@ -95,38 +105,34 @@ export default function ReaderScreen() {
         ) : null
       }
     >
-      <View className="pt-safe-offset-2 pb-safe-offset-4 flex-1 px-5">
-        <View className="flex-row items-start justify-between">
+      <View className="pt-safe-offset-2 pb-safe-offset-3 flex-1 px-4">
+        <View className="flex-row items-start justify-between gap-3">
           <View
-            className="gap-2 rounded-2xl px-3 py-2"
-            style={{ backgroundColor: 'rgba(13, 10, 6, 0.55)' }}
+            className="gap-2.5 rounded-2xl px-3.5 py-3"
+            style={{
+              backgroundColor: palette.panel,
+              borderWidth: 1,
+              borderColor: palette.border,
+            }}
           >
-            <Text numberOfLines={1} className="text-foreground max-w-[190px] text-sm font-semibold">
-              {sceneLabel}
-            </Text>
-            <SceneProgress total={DECISIONS_PER_STORY} made={decisions.length} />
+            <Mono className="text-[10px] tracking-[2px] uppercase">
+              {`Decision ${Math.min(decisions.length + 1, DECISIONS_PER_STORY)} of ${DECISIONS_PER_STORY}`}
+            </Mono>
+            <PathLine total={DECISIONS_PER_STORY} choices={takenPath} />
           </View>
 
           <View className="flex-row items-center gap-2">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 w-10 rounded-full px-0"
-              style={{ backgroundColor: 'rgba(13, 10, 6, 0.55)' }}
+            <IconButton
               accessibilityLabel={ambientEnabled ? 'Mute ambient sound' : 'Unmute ambient sound'}
               onPress={() => setAmbientEnabled(!ambientEnabled)}
             >
               {ambientEnabled ? (
-                <Volume2 size={18} color={palette.foreground} />
+                <Volume2 size={17} color={palette.foreground} />
               ) : (
-                <VolumeX size={18} color={palette.muted} />
+                <VolumeX size={17} color={palette.muted} />
               )}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-10 w-10 rounded-full px-0"
-              style={{ backgroundColor: 'rgba(13, 10, 6, 0.55)' }}
+            </IconButton>
+            <IconButton
               accessibilityLabel="Leave story"
               onPress={() => {
                 narration.stop();
@@ -134,42 +140,33 @@ export default function ReaderScreen() {
                 router.replace('/');
               }}
             >
-              <X size={18} color={palette.foreground} />
-            </Button>
+              <X size={17} color={palette.foreground} />
+            </IconButton>
           </View>
         </View>
 
         <View className="flex-1" />
 
-        <AnimatedView style={crossfadeStyle} className="gap-5">
-          <View className="gap-3">
-            <View className="flex-row items-center gap-3">
-              <View className="bg-accent h-[2px] w-7 rounded-full" />
-              <Text className="text-accent text-[11px] font-bold tracking-[3px] uppercase">
-                Scene {decisions.length + 1}
-              </Text>
-            </View>
+        <AnimatedView style={crossfadeStyle} className="gap-4">
+          {/* Translucent charcoal panel: the story stays readable, the art stays visible. */}
+          <View
+            className="gap-4 rounded-3xl p-5"
+            style={{
+              backgroundColor: palette.panel,
+              borderWidth: 1,
+              borderColor: palette.border,
+            }}
+          >
+            <Display weight="medium" className="text-muted text-[15px] leading-5">
+              {sceneLabel}
+            </Display>
 
-            <ScrollView className="max-h-60" showsVerticalScrollIndicator={false}>
-              <Text className="text-foreground text-xl leading-8">{shownNode.text}</Text>
+            <ScrollView className="max-h-56" showsVerticalScrollIndicator={false}>
+              <Body className="text-[17px] leading-[28px]">{shownNode.text}</Body>
             </ScrollView>
 
             {narration.hasAudio ? (
-              <Button
-                size="sm"
-                variant="tertiary"
-                className="border-accent/35 h-11 self-start rounded-full border px-4"
-                onPress={narration.toggle}
-              >
-                {narration.isPlaying ? (
-                  <Pause size={16} color={palette.accent} />
-                ) : (
-                  <Play size={16} color={palette.accent} />
-                )}
-                <Button.Label className="text-accent text-sm font-semibold">
-                  {narration.isPlaying ? 'Pause narration' : 'Listen'}
-                </Button.Label>
-              </Button>
+              <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
             ) : isRecordingNarration ? (
               <MediaHint kind="voice" />
             ) : null}
@@ -178,13 +175,13 @@ export default function ReaderScreen() {
             {branches.isWriting ? <MediaHint kind="writing" /> : null}
           </View>
 
-          <View className="gap-3">
+          <View className="gap-2.5">
             {choices.map((choice, index) => (
               <ChoiceButton
                 key={`${shownNode.id}-${choice.letter}`}
                 letter={choice.letter}
                 label={choice.label}
-                emphasis={index === 0 ? 'primary' : 'secondary'}
+                index={index}
                 disabled={!branches.isReady}
                 onPress={() => {
                   narration.stop();
@@ -194,19 +191,14 @@ export default function ReaderScreen() {
             ))}
 
             {branches.error && !branches.isReady ? (
-              <View className="gap-2">
-                <Text className="text-muted text-sm">{branches.error}</Text>
-                <Button
-                  size="sm"
-                  variant="tertiary"
-                  className="border-accent/35 h-11 self-start rounded-full border px-4"
+              <View className="gap-2 pt-1">
+                <Body className="text-muted text-[13px] leading-5">{branches.error}</Body>
+                <ActionButton
+                  label="Write the next scenes"
+                  variant="secondary"
+                  icon={RefreshCw}
                   onPress={branches.retry}
-                >
-                  <RefreshCw size={16} color={palette.accent} />
-                  <Button.Label className="text-accent text-sm font-semibold">
-                    Write the next scenes
-                  </Button.Label>
-                </Button>
+                />
               </View>
             ) : null}
           </View>

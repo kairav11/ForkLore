@@ -115,6 +115,14 @@ function toStyleId(value: string): StyleId | null {
   return isStyleId(value) ? value : null;
 }
 
+/** "a,b,a" -> ["a", "b", "a"] */
+function splitLetters(value: string | null | undefined): string[] {
+  return (value ?? '')
+    .split(',')
+    .map((letter) => letter.trim().toLowerCase())
+    .filter((letter) => letter.length > 0);
+}
+
 function mapChoices(raw: unknown): StoryChoice[] {
   if (!Array.isArray(raw)) return [];
   const entries: unknown[] = raw;
@@ -268,9 +276,16 @@ export async function finishStory(
   });
 }
 
-/** Match score against the story owner's own path. */
+/** Match score against the story owner's own path, plus both paths for the diagram. */
 export async function getMatch(storyId: string, path: string[]): Promise<MatchResult> {
-  const result = await invoke<MatchResult>('story-match', {
+  const result = await invoke<{
+    score?: number;
+    agreedCount?: number;
+    totalCount?: number;
+    ownerName?: string | null;
+    ownerPath?: string | null;
+    yourPath?: string | null;
+  }>('story-match', {
     storyId,
     path: path.join(','),
   });
@@ -283,5 +298,7 @@ export async function getMatch(storyId: string, path: string[]): Promise<MatchRe
     agreedCount,
     totalCount,
     ownerName: result.ownerName ?? null,
+    ownerPath: splitLetters(result.ownerPath),
+    yourPath: splitLetters(result.yourPath ?? path.join(',')),
   };
 }

@@ -1,13 +1,13 @@
 {
-  "name": "Your App Name",
-  "short_name": "Your App",
-  "description": "An app built with Bilt",
+  "name": "StoryBranch",
+  "short_name": "StoryBranch",
+  "description": "Write the start, choose the rest — a branching story you can share.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#6366f1",
-  "background_color": "#ffffff",
+  "theme_color": "#14151A",
+  "background_color": "#14151A",
   "icons": [
     {
       "src": "/icons/icon-192.png",

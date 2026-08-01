@@ -1,61 +1,66 @@
-import { Pressable, View } from 'react-native';
-import { Text } from 'heroui-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { ArrowRight } from 'lucide-react-native';
 
-import { palette } from '@/lib/theme';
+import { palette, pathTone } from '@/lib/theme';
+import { Body, Mono } from '@/components/ui/Text';
 
 interface ChoiceButtonProps {
   letter: string;
   label: string;
-  /** The first option gets the warmer, more inviting treatment. */
-  emphasis?: 'primary' | 'secondary';
+  /** 0 = first option (amber), 1 = second option (violet-blue). */
+  index: number;
   /** The scene behind this choice is not written yet. */
   disabled?: boolean;
   onPress: () => void;
 }
 
-/** One of the two decisions at the bottom of a scene. */
+/**
+ * One of the two decisions at the bottom of a scene: a pill tinted with its own
+ * path colour, so the two options are told apart by colour and not just order.
+ */
 export function ChoiceButton({
   letter,
   label,
-  emphasis = 'secondary',
+  index,
   disabled = false,
   onPress,
 }: ChoiceButtonProps) {
-  const isPrimary = emphasis === 'primary';
+  const tone = pathTone(index);
 
   return (
     <Pressable
       onPress={onPress}
       disabled={disabled}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={`Option ${letter.toUpperCase()}: ${label}`}
       accessibilityState={{ disabled }}
       style={({ pressed }) => ({
-        transform: [{ scale: pressed && !disabled ? 0.985 : 1 }],
-        opacity: disabled ? 0.45 : pressed ? 0.92 : 1,
+        opacity: disabled ? 0.42 : pressed ? 0.86 : 1,
       })}
     >
       <View
-        className={
-          isPrimary
-            ? 'border-accent/45 flex-row items-center gap-3 rounded-3xl border px-4 py-4'
-            : 'border-border/80 flex-row items-center gap-3 rounded-3xl border px-4 py-4'
-        }
-        style={{
-          backgroundColor: isPrimary ? 'rgba(251, 171, 85, 0.13)' : 'rgba(36, 29, 22, 0.92)',
-        }}
+        className="flex-row items-center gap-3 overflow-hidden rounded-full border py-3 pr-4 pl-3"
+        style={{ backgroundColor: palette.panel, borderColor: tone.edge }}
       >
         <View
-          className="border-accent/40 h-9 w-9 items-center justify-center rounded-full border"
-          style={{ backgroundColor: palette.accentSoft }}
+          pointerEvents="none"
+          style={[StyleSheet.absoluteFillObject, { backgroundColor: tone.soft }]}
+        />
+
+        <View
+          className="h-9 w-9 items-center justify-center rounded-full"
+          style={{ backgroundColor: tone.color }}
         >
-          <Text className="text-accent text-sm font-bold tracking-widest">
+          <Mono weight="bold" className="text-[13px]" color={palette.background}>
             {letter.toUpperCase()}
-          </Text>
+          </Mono>
         </View>
-        <Text className="text-foreground flex-1 text-lg leading-6 font-medium">{label}</Text>
-        <ArrowRight size={18} color={isPrimary ? palette.accent : palette.muted} />
+
+        <Body weight="medium" className="flex-1 text-[17px] leading-[23px]">
+          {label}
+        </Body>
+
+        <ArrowRight size={17} color={tone.color} />
       </View>
     </Pressable>
   );

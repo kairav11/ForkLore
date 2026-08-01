@@ -1,16 +1,18 @@
 import { ScrollView, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Text } from 'heroui-native';
 import { CornerDownRight, RotateCcw } from 'lucide-react-native';
 
 import { findNode, useCurrentNode, useStoryStore } from '@/lib/storyStore';
-import { palette } from '@/lib/theme';
+import { palette, pathTone } from '@/lib/theme';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
+import { PathLine } from '@/components/PathLine';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
+import { Body, Mono } from '@/components/ui/Text';
 
 export default function ReplayScreen() {
   const router = useRouter();
@@ -36,55 +38,68 @@ export default function ReplayScreen() {
     return <LoadingState title="Loading your replay…" />;
   }
 
-  const hasReplay = decisions.length > 0;
+  const takenPath = decisions.map((decision) =>
+    decision.choiceLetter.toLowerCase() === 'a' ? 0 : 1,
+  );
 
   return (
     <StoryBackdrop imageUrl={story.backgroundImageUrl} overlay="strong">
       <View className="pt-safe-offset-2 flex-1">
-        <View className="px-5">
+        <View className="px-4">
           <ScreenHeader title="Your path" onBack={() => router.back()} />
         </View>
 
         <ScrollView
           className="flex-1"
-          contentContainerClassName="px-5 pb-safe-offset-6 gap-4 pt-2"
+          contentContainerClassName="px-4 pb-safe-offset-6 gap-3 pt-2"
           showsVerticalScrollIndicator={false}
         >
-          <View className="gap-2 pb-2">
-            <Display className="text-3xl leading-10">
+          <View className="gap-4 pb-2">
+            <Display className="text-[30px] leading-[36px]">
               {story.title ?? 'Your story, start to finish'}
             </Display>
-            <Text className="text-muted text-base leading-6">
+            <Body className="text-muted text-[15px] leading-6">
               Every scene you read and every decision you made, in order.
-            </Text>
+            </Body>
+            {takenPath.length > 0 ? (
+              <PathLine total={Math.max(takenPath.length, 3)} choices={takenPath} />
+            ) : null}
           </View>
 
           {decisions.map((decision, index) => {
             const node = findNode(story, decision.nodeId);
             const imageUrl = node?.imageUrl ?? null;
+            const tone = pathTone(decision.choiceLetter.toLowerCase() === 'a' ? 0 : 1);
 
             return (
               <View
                 key={`${decision.nodeId}-${decision.choiceLetter}`}
-                className="border-border/60 gap-3 rounded-3xl border p-5"
-                style={{ backgroundColor: 'rgba(22, 17, 9, 0.86)' }}
+                className="gap-3 rounded-3xl p-4"
+                style={{
+                  backgroundColor: palette.panel,
+                  borderWidth: 1,
+                  borderColor: palette.border,
+                }}
               >
                 <View className="flex-row items-center gap-3">
+                  <Mono className="text-[10px] tracking-[2px] uppercase">
+                    {`Scene ${index + 1}`}
+                  </Mono>
+                  <View className="h-[2px] flex-1" style={{ backgroundColor: palette.border }} />
                   <View
-                    className="border-accent/40 h-7 w-7 items-center justify-center rounded-full border"
-                    style={{ backgroundColor: palette.accentSoft }}
+                    className="h-6 w-6 items-center justify-center rounded-full"
+                    style={{ backgroundColor: tone.color }}
                   >
-                    <Text className="text-accent text-xs font-bold">{index + 1}</Text>
+                    <Mono weight="bold" className="text-[10px]" color={palette.background}>
+                      {decision.choiceLetter.toUpperCase()}
+                    </Mono>
                   </View>
-                  <Text className="text-muted text-[11px] font-bold tracking-[3px] uppercase">
-                    Scene {index + 1}
-                  </Text>
                 </View>
 
                 {imageUrl ? (
                   <Image
                     source={{ uri: imageUrl }}
-                    style={{ width: '100%', height: 190, borderRadius: 18 }}
+                    style={{ width: '100%', height: 180, borderRadius: 16 }}
                     contentFit="cover"
                     contentPosition="top"
                     transition={300}
@@ -93,44 +108,57 @@ export default function ReplayScreen() {
                   />
                 ) : null}
 
-                <Text className="text-foreground text-lg leading-7">
+                <Body className="text-[16px] leading-[26px]">
                   {node?.text ?? decision.nodeText}
-                </Text>
+                </Body>
 
-                <View className="border-border/60 flex-row items-start gap-2 border-t pt-3">
-                  <CornerDownRight size={16} color={palette.accent} />
-                  <Text className="text-accent flex-1 text-base leading-6 font-semibold">
+                <View
+                  className="flex-row items-start gap-2 pt-3"
+                  style={{ borderTopWidth: 1, borderTopColor: palette.border }}
+                >
+                  <CornerDownRight size={15} color={tone.color} />
+                  <Body weight="medium" className="flex-1 text-[15px] leading-6" color={tone.color}>
                     {decision.choiceLabel}
-                  </Text>
+                  </Body>
                 </View>
               </View>
             );
           })}
 
-          {hasReplay ? null : (
+          {decisions.length === 0 ? (
             <View
-              className="border-border/60 gap-2 rounded-3xl border p-5"
-              style={{ backgroundColor: 'rgba(22, 17, 9, 0.86)' }}
+              className="gap-2 rounded-3xl p-5"
+              style={{
+                backgroundColor: palette.panel,
+                borderWidth: 1,
+                borderColor: palette.border,
+              }}
             >
-              <Text className="text-foreground text-lg leading-7">
+              <Body weight="medium" className="text-[16px] leading-6">
                 There is no finished playthrough on this device yet.
-              </Text>
-              <Text className="text-muted text-base leading-6">
+              </Body>
+              <Body className="text-muted text-[15px] leading-6">
                 Read the story to the end and your decisions show up here.
-              </Text>
+              </Body>
             </View>
-          )}
+          ) : null}
 
           {endingNode?.isEnding ? (
             <View
-              className="border-accent/30 gap-3 rounded-3xl border p-5"
-              style={{ backgroundColor: 'rgba(22, 17, 9, 0.9)' }}
+              className="gap-3 rounded-3xl p-4"
+              style={{
+                backgroundColor: palette.panel,
+                borderWidth: 1,
+                borderColor: palette.pathAEdge,
+              }}
             >
-              <Display className="text-accent text-lg tracking-wide">The End</Display>
+              <Mono className="text-[10px] tracking-[3px] uppercase" color={palette.accent}>
+                The end
+              </Mono>
               {endingNode.imageUrl ? (
                 <Image
                   source={{ uri: endingNode.imageUrl }}
-                  style={{ width: '100%', height: 190, borderRadius: 18 }}
+                  style={{ width: '100%', height: 180, borderRadius: 16 }}
                   contentFit="cover"
                   contentPosition="top"
                   transition={300}
@@ -138,23 +166,20 @@ export default function ReplayScreen() {
                   accessibilityIgnoresInvertColors
                 />
               ) : null}
-              <Text className="text-foreground text-lg leading-7">{endingNode.text}</Text>
+              <Body className="text-[16px] leading-[26px]">{endingNode.text}</Body>
             </View>
           ) : null}
 
-          <Button
-            size="lg"
-            className="mt-2 h-14 rounded-2xl"
-            onPress={() => {
-              restart();
-              router.replace({ pathname: '/reader/[id]', params: { id } });
-            }}
-          >
-            <RotateCcw size={18} color={palette.accentForeground} />
-            <Button.Label className="text-lg font-semibold">
-              Read It Again From The Start
-            </Button.Label>
-          </Button>
+          <View className="pt-2">
+            <ActionButton
+              label="Read it again from the start"
+              icon={RotateCcw}
+              onPress={() => {
+                restart();
+                router.replace({ pathname: '/reader/[id]', params: { id } });
+              }}
+            />
+          </View>
         </ScrollView>
       </View>
     </StoryBackdrop>

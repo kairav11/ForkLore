@@ -9,7 +9,7 @@ interface DisplayProps extends TextProps {
   weight?: 'medium' | 'bold';
 }
 
-/** Serif display type — used for titles and story headlines. */
+/** Fraunces — the app title, setting names, story and ending titles. */
 export function Display({ className, style, weight = 'bold', ...rest }: DisplayProps) {
   return (
     <RNText

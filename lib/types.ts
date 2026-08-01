@@ -42,6 +42,10 @@ export interface MatchResult {
   agreedCount: number;
   totalCount: number;
   ownerName: string | null;
+  /** The owner's decisions, letters in order — drawn in amber on the match screen. */
+  ownerPath: string[];
+  /** The reader's own decisions — drawn in violet-blue. */
+  yourPath: string[];
 }
 
 export interface CreateStoryInput {

@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&display=swap');
 
 @import 'tailwindcss';
 @import 'uniwind';
@@ -7,111 +8,124 @@
 @import 'heroui-native/styles';
 
 /*
- * StoryBranch theme: near-black warm surfaces lit by a single amber accent,
- * with an ember tint for gradients. The app is dark-only, so the same palette is
- * defined in both the light and dark Uniwind theme variants. This keeps native
- * (Expo Go / Android) in sync with web instead of falling back to HeroUI's
- * default blue accent.
+ * StoryBranch theme — charcoal room, two path colours.
+ *
+ * The palette is intentionally written as hex rather than oklch: the tones are
+ * fixed brand values (#14151A / #1F2128 / #E8A33D / #7C8CFF / #F2EFE9 / #9B9CA6)
+ * and hex keeps web and native byte-identical instead of round-tripping through
+ * a colour space conversion.
+ *
+ * Path A (warm amber) is always the first option of a binary choice, Path B
+ * (cool violet-blue) always the second. Nothing else in the UI uses those two
+ * hues, so colour alone tells the reader which branch they are looking at.
+ *
+ * The app is dark-only, so the same values are defined in both the light and
+ * dark Uniwind variants to keep Expo Go / Android in sync with web.
  */
 @theme {
-  --color-ember: oklch(0.62 0.17 32);
+  --color-path-a: #e8a33d;
+  --color-path-b: #7c8cff;
+  --color-canvas: #14151a;
+  --color-canvas-deep: #0e0f13;
+  --color-panel: #1f2128;
+  --color-panel-raised: #262932;
 }
 
 @layer theme {
   :root {
     @variant light {
-      --background: oklch(0.14 0.014 46);
-      --foreground: oklch(0.965 0.01 84);
+      --background: #14151a;
+      --foreground: #f2efe9;
 
-      --surface: oklch(0.205 0.017 46);
+      --surface: #1f2128;
       --surface-foreground: var(--foreground);
-      --surface-secondary: oklch(0.245 0.018 46);
+      --surface-secondary: #262932;
       --surface-secondary-foreground: var(--foreground);
-      --surface-tertiary: oklch(0.285 0.019 46);
+      --surface-tertiary: #2e313b;
       --surface-tertiary-foreground: var(--foreground);
 
-      --overlay: oklch(0.19 0.016 46);
+      --overlay: #1f2128;
       --overlay-foreground: var(--foreground);
-      --backdrop: oklch(0% 0 0 / 66%);
+      --backdrop: rgba(10, 11, 14, 0.72);
 
-      --muted: oklch(0.685 0.022 74);
+      --muted: #9b9ca6;
 
-      --default: oklch(0.26 0.018 46);
-      --default-foreground: oklch(0.945 0.012 84);
+      --default: #262932;
+      --default-foreground: #f2efe9;
 
-      --accent: oklch(0.8 0.155 64);
-      --accent-foreground: oklch(0.21 0.045 60);
+      --accent: #e8a33d;
+      --accent-foreground: #14151a;
 
-      --field-background: oklch(0.225 0.017 46);
+      --field-background: #1f2128;
       --field-foreground: var(--foreground);
-      --field-placeholder: var(--muted);
-      --field-border: oklch(0.32 0.018 46);
+      --field-placeholder: #6f7180;
+      --field-border: #2c2f38;
 
-      --success: oklch(0.72 0.14 160);
-      --success-foreground: oklch(0.18 0.03 160);
-      --warning: oklch(0.8 0.14 80);
-      --warning-foreground: oklch(0.2 0.03 80);
-      --danger: oklch(0.65 0.19 22);
-      --danger-foreground: oklch(0.97 0.008 22);
+      --success: #6fbf8b;
+      --success-foreground: #14151a;
+      --warning: #e8a33d;
+      --warning-foreground: #14151a;
+      --danger: #e0705e;
+      --danger-foreground: #14151a;
 
-      --segment: oklch(0.205 0.017 46);
+      --segment: #1f2128;
       --segment-foreground: var(--foreground);
 
-      --border: oklch(0.305 0.018 46);
-      --separator: oklch(0.295 0.018 46);
-      --focus: var(--accent);
-      --link: var(--accent);
+      --border: #2c2f38;
+      --separator: #262932;
+      --focus: #e8a33d;
+      --link: #e8a33d;
 
       --surface-shadow: 0 0 0 0 transparent inset;
-      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+      --overlay-shadow: 0 0 0 0 transparent inset;
       --field-shadow: 0 0 0 0 transparent inset;
     }
 
     @variant dark {
-      --background: oklch(0.14 0.014 46);
-      --foreground: oklch(0.965 0.01 84);
+      --background: #14151a;
+      --foreground: #f2efe9;
 
-      --surface: oklch(0.205 0.017 46);
+      --surface: #1f2128;
       --surface-foreground: var(--foreground);
-      --surface-secondary: oklch(0.245 0.018 46);
+      --surface-secondary: #262932;
       --surface-secondary-foreground: var(--foreground);
-      --surface-tertiary: oklch(0.285 0.019 46);
+      --surface-tertiary: #2e313b;
       --surface-tertiary-foreground: var(--foreground);
 
-      --overlay: oklch(0.19 0.016 46);
+      --overlay: #1f2128;
       --overlay-foreground: var(--foreground);
-      --backdrop: oklch(0% 0 0 / 66%);
+      --backdrop: rgba(10, 11, 14, 0.72);
 
-      --muted: oklch(0.685 0.022 74);
+      --muted: #9b9ca6;
 
-      --default: oklch(0.26 0.018 46);
-      --default-foreground: oklch(0.945 0.012 84);
+      --default: #262932;
+      --default-foreground: #f2efe9;
 
-      --accent: oklch(0.8 0.155 64);
-      --accent-foreground: oklch(0.21 0.045 60);
+      --accent: #e8a33d;
+      --accent-foreground: #14151a;
 
-      --field-background: oklch(0.225 0.017 46);
+      --field-background: #1f2128;
       --field-foreground: var(--foreground);
-      --field-placeholder: var(--muted);
-      --field-border: oklch(0.32 0.018 46);
+      --field-placeholder: #6f7180;
+      --field-border: #2c2f38;
 
-      --success: oklch(0.72 0.14 160);
-      --success-foreground: oklch(0.18 0.03 160);
-      --warning: oklch(0.8 0.14 80);
-      --warning-foreground: oklch(0.2 0.03 80);
-      --danger: oklch(0.65 0.19 22);
-      --danger-foreground: oklch(0.97 0.008 22);
+      --success: #6fbf8b;
+      --success-foreground: #14151a;
+      --warning: #e8a33d;
+      --warning-foreground: #14151a;
+      --danger: #e0705e;
+      --danger-foreground: #14151a;
 
-      --segment: oklch(0.205 0.017 46);
+      --segment: #1f2128;
       --segment-foreground: var(--foreground);
 
-      --border: oklch(0.305 0.018 46);
-      --separator: oklch(0.295 0.018 46);
-      --focus: var(--accent);
-      --link: var(--accent);
+      --border: #2c2f38;
+      --separator: #262932;
+      --focus: #e8a33d;
+      --link: #e8a33d;
 
       --surface-shadow: 0 0 0 0 transparent inset;
-      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.22) inset;
+      --overlay-shadow: 0 0 0 0 transparent inset;
       --field-shadow: 0 0 0 0 transparent inset;
     }
   }

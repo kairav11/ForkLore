@@ -1,51 +1,49 @@
-import { Fragment, useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import {
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  TextInput,
+  View,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import {
-  Button,
-  Description,
-  FieldError,
-  Input,
-  Label,
-  Select,
-  Separator,
-  Text,
-  TextArea,
-  TextField,
-} from 'heroui-native';
-import { BookOpen, Check, KeyRound, Sparkles } from 'lucide-react-native';
+import { BookOpen, Check, KeyRound } from 'lucide-react-native';
 
 import { SETTINGS, STYLES } from '@/lib/settings';
-import { palette } from '@/lib/theme';
-import type { StyleId } from '@/lib/types';
+import { fonts, palette } from '@/lib/theme';
+import type { SettingId, StyleId } from '@/lib/types';
+import { FieldCard } from '@/components/FieldCard';
+import { SettingPicker } from '@/components/SettingPicker';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { LinearGradient } from '@/components/ui/primitives/LinearGradient';
-
-interface SelectValue {
-  value: string;
-  label: string;
-}
+import { Body, Mono } from '@/components/ui/Text';
 
 const HERO: number = require('@/assets/images/setup-hero.png');
 
+/** Previews are built from the app's own two path tones, never stock colours. */
 const STYLE_SWATCHES: Record<StyleId, readonly [string, string]> = {
-  'flat-illustrated': ['#F7C777', '#E0714A'],
-  'comic-ink': ['#EDE7DA', '#40382F'],
-  painterly: ['#C97B4A', '#5A3A58'],
+  'flat-illustrated': [palette.pathA, palette.pathB],
+  'comic-ink': [palette.foreground, palette.surfaceRaised],
+  painterly: [palette.pathB, palette.pathA],
 };
 
 export default function SetupScreen() {
   const router = useRouter();
-  const [setting, setSetting] = useState<SelectValue | undefined>();
+  const [setting, setSetting] = useState<SettingId | null>(null);
+  const [isPickerOpen, setPickerOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
+  const [isPromptFocused, setPromptFocused] = useState(false);
   const [name, setName] = useState('');
+  const [isNameFocused, setNameFocused] = useState(false);
   const [styleId, setStyleId] = useState<StyleId>('flat-illustrated');
   const [showErrors, setShowErrors] = useState(false);
 
-  const missingSetting = setting === undefined;
+  const missingSetting = setting === null;
   const missingPrompt = prompt.trim().length === 0;
-  const settingHint = SETTINGS.find((option) => option.id === setting?.value)?.hint;
+  const settingHint = SETTINGS.find((option) => option.id === setting)?.hint;
 
   const handleStart = () => {
     if (missingSetting || missingPrompt) {
@@ -55,7 +53,7 @@ export default function SetupScreen() {
     router.push({
       pathname: '/loading',
       params: {
-        setting: setting.value,
+        setting,
         style: styleId,
         prompt: prompt.trim(),
         name: name.trim(),
@@ -74,164 +72,190 @@ export default function SetupScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <View className="h-[330px] w-full">
+        <View className="h-[320px] w-full">
           <Image
             source={HERO}
-            style={{ width: '100%', height: 330 }}
+            style={{ width: '100%', height: 320 }}
             contentFit="cover"
             contentPosition="center"
             accessibilityIgnoresInvertColors
           />
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 0,
+              right: 0,
+              top: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(20, 21, 26, 0.5)',
+            }}
+          />
           <LinearGradient
             pointerEvents="none"
             colors={[palette.scrimSoft, palette.scrim, palette.background]}
-            locations={[0, 0.55, 1]}
+            locations={[0, 0.6, 1]}
             style={{ position: 'absolute', left: 0, right: 0, top: 0, bottom: 0 }}
           />
-          <View className="pt-safe-offset-5 absolute inset-x-0 bottom-0 justify-end px-6 pb-6">
-            <View className="flex-row items-center gap-2 pb-3">
-              <Sparkles size={16} color={palette.accent} />
-              <Text className="text-accent text-[11px] font-bold tracking-[4px] uppercase">
-                StoryBranch
-              </Text>
+          <View className="pt-safe-offset-5 absolute inset-x-0 bottom-0 justify-end px-5 pb-7">
+            <View className="flex-row items-center gap-2.5 pb-4">
+              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.pathA }} />
+              <View className="h-[2px] w-4" style={{ backgroundColor: palette.borderStrong }} />
+              <View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.pathB }} />
+              <Mono className="pl-1 text-[10px] tracking-[3px] uppercase">StoryBranch</Mono>
             </View>
-            <Display className="text-[38px] leading-[44px]">
+            <Display className="text-[40px] leading-[46px]">
               Write the start.{'\n'}Choose the rest.
             </Display>
-            <Text className="text-muted mt-3 text-base leading-6">
+            <Body className="text-muted mt-3 text-[15px] leading-6">
               One place, your idea, three decisions — and an ending that is yours alone.
-            </Text>
+            </Body>
           </View>
         </View>
 
-        <View className="gap-7 px-6 pt-7">
-          <TextField isInvalid={showErrors && missingSetting}>
-            <Label className="text-base">Where does it happen?</Label>
-            <Select value={setting} onValueChange={setSetting}>
-              <Select.Trigger className="h-14 rounded-2xl">
-                <Select.Value placeholder="Choose a setting" className="text-lg" />
-                <Select.TriggerIndicator />
-              </Select.Trigger>
-              <Select.Portal>
-                <Select.Overlay />
-                <Select.Content presentation="popover" width="trigger">
-                  {SETTINGS.map((option, index) => (
-                    <Fragment key={option.id}>
-                      <Select.Item value={option.id} label={option.label} />
-                      {index < SETTINGS.length - 1 ? <Separator /> : null}
-                    </Fragment>
-                  ))}
-                </Select.Content>
-              </Select.Portal>
-            </Select>
-            {showErrors && missingSetting ? (
-              <FieldError>Pick a setting to continue.</FieldError>
-            ) : (
-              <Description>
-                {settingHint ?? 'The backdrop and the ambient sound come from this place.'}
-              </Description>
-            )}
-          </TextField>
+        <View className="gap-3 px-5 pt-6">
+          <FieldCard
+            label="Where it happens"
+            isActive={isPickerOpen}
+            error={showErrors && missingSetting ? 'Pick a setting to continue.' : null}
+            hint={settingHint ?? 'The backdrop and the ambient sound come from this place.'}
+          >
+            <SettingPicker
+              value={setting}
+              isOpen={isPickerOpen}
+              onToggle={() => setPickerOpen(!isPickerOpen)}
+              onSelect={(id) => {
+                setSetting(id);
+                setPickerOpen(false);
+                if (showErrors) setShowErrors(false);
+              }}
+            />
+          </FieldCard>
 
-          <TextField isInvalid={showErrors && missingPrompt}>
-            <Label className="text-base">Your story idea</Label>
-            <TextArea
+          <FieldCard
+            label="Your story idea"
+            isActive={isPromptFocused}
+            error={
+              showErrors && missingPrompt
+                ? 'Add a sentence or two so we know where to start.'
+                : null
+            }
+            hint="A sentence is enough. More detail means a closer match."
+          >
+            <TextInput
               value={prompt}
               onChangeText={(text) => {
                 setPrompt(text);
                 if (showErrors) setShowErrors(false);
               }}
+              onFocus={() => setPromptFocused(true)}
+              onBlur={() => setPromptFocused(false)}
               placeholder="A quiet kid finds a note in their locker that knows their secret…"
-              numberOfLines={5}
-              className="min-h-32 rounded-2xl text-lg leading-7"
+              placeholderTextColor={palette.placeholder}
+              multiline
+              textAlignVertical="top"
+              style={{
+                minHeight: 104,
+                fontFamily: fonts.body,
+                fontSize: 17,
+                lineHeight: 26,
+                color: palette.foreground,
+              }}
             />
-            {showErrors && missingPrompt ? (
-              <FieldError>Add a sentence or two so we know where to start.</FieldError>
-            ) : (
-              <Description>A sentence is enough. More detail means a closer match.</Description>
-            )}
-          </TextField>
+          </FieldCard>
 
-          <View className="gap-3">
-            <Label className="text-base">Art style</Label>
-            <View className="flex-row gap-3">
+          <FieldCard label="Art style">
+            <View className="flex-row gap-2.5">
               {STYLES.map((option) => {
                 const isSelected = option.id === styleId;
                 const swatch = STYLE_SWATCHES[option.id];
                 return (
-                  <Button
+                  <Pressable
                     key={option.id}
-                    variant="tertiary"
-                    className={
-                      isSelected
-                        ? 'border-accent h-auto flex-1 flex-col gap-2 rounded-2xl border p-2'
-                        : 'border-border/70 h-auto flex-1 flex-col gap-2 rounded-2xl border p-2'
-                    }
                     onPress={() => setStyleId(option.id)}
+                    accessibilityRole="button"
+                    accessibilityLabel={option.label}
                     accessibilityState={{ selected: isSelected }}
+                    className="flex-1"
+                    style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
                   >
-                    <View className="h-14 w-full overflow-hidden rounded-xl">
-                      <LinearGradient
-                        colors={[swatch[0], swatch[1]]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{ width: '100%', height: '100%' }}
-                      />
-                      {isSelected ? (
-                        <View className="absolute inset-0 items-center justify-center">
-                          <View
-                            className="h-7 w-7 items-center justify-center rounded-full"
-                            style={{ backgroundColor: 'rgba(13, 10, 6, 0.7)' }}
-                          >
-                            <Check size={16} color={palette.accent} />
-                          </View>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Button.Label
-                      className={
-                        isSelected
-                          ? 'text-accent text-center text-xs font-semibold'
-                          : 'text-muted text-center text-xs font-semibold'
-                      }
+                    <View
+                      className="gap-2 rounded-2xl p-2"
+                      style={{
+                        backgroundColor: palette.background,
+                        borderWidth: 1,
+                        borderColor: isSelected ? palette.accent : palette.border,
+                      }}
                     >
-                      {option.label}
-                    </Button.Label>
-                  </Button>
+                      <View className="h-14 w-full overflow-hidden rounded-xl">
+                        <LinearGradient
+                          colors={[swatch[0], swatch[1]]}
+                          start={{ x: 0, y: 0 }}
+                          end={{ x: 1, y: 1 }}
+                          style={{ width: '100%', height: '100%' }}
+                        />
+                        {isSelected ? (
+                          <View className="absolute inset-0 items-center justify-center">
+                            <View
+                              className="h-7 w-7 items-center justify-center rounded-full"
+                              style={{ backgroundColor: 'rgba(20, 21, 26, 0.75)' }}
+                            >
+                              <Check size={15} color={palette.accent} />
+                            </View>
+                          </View>
+                        ) : null}
+                      </View>
+                      <Mono
+                        className="text-center text-[9px] tracking-[1px] uppercase"
+                        color={isSelected ? palette.accent : palette.muted}
+                      >
+                        {option.label}
+                      </Mono>
+                    </View>
+                  </Pressable>
                 );
               })}
             </View>
-          </View>
+          </FieldCard>
 
-          <TextField>
-            <Label className="text-base">Your name (optional)</Label>
-            <Input
+          <FieldCard
+            label="Your name (optional)"
+            isActive={isNameFocused}
+            hint="Friends see this on their match score."
+          >
+            <TextInput
               value={name}
               onChangeText={setName}
+              onFocus={() => setNameFocused(true)}
+              onBlur={() => setNameFocused(false)}
               placeholder="e.g. Mia"
+              placeholderTextColor={palette.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
-              className="h-14 rounded-2xl text-lg"
+              style={{
+                height: 30,
+                fontFamily: fonts.body,
+                fontSize: 17,
+                color: palette.foreground,
+              }}
             />
-            <Description>Friends see this on their match score.</Description>
-          </TextField>
+          </FieldCard>
         </View>
       </ScrollView>
 
-      <View className="pb-safe-offset-4 gap-2 px-6 pt-3">
+      <View className="pb-safe-offset-4 gap-1 px-5 pt-3">
         <LinearGradient
           pointerEvents="none"
           colors={[palette.transparent, palette.background]}
           style={{ position: 'absolute', left: 0, right: 0, top: -28, height: 28 }}
         />
-        <Button size="lg" className="h-14 rounded-2xl" onPress={handleStart}>
-          <BookOpen size={20} color={palette.accentForeground} />
-          <Button.Label className="text-lg font-semibold">Start My Story</Button.Label>
-        </Button>
-        <Button size="md" variant="ghost" onPress={() => router.push('/enter')}>
-          <KeyRound size={16} color={palette.muted} />
-          <Button.Label className="text-muted text-base">Enter a shared story</Button.Label>
-        </Button>
+        <ActionButton label="Start my story" icon={BookOpen} onPress={handleStart} />
+        <ActionButton
+          label="Enter a shared story"
+          variant="ghost"
+          icon={KeyRound}
+          onPress={() => router.push('/enter')}
+        />
       </View>
     </KeyboardAvoidingView>
   );

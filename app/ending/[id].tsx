@@ -2,8 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Text } from 'heroui-native';
-import { Pause, Percent, Play, RefreshCw, Share2, Sparkles } from 'lucide-react-native';
+import { Percent, RefreshCw, Share2, Sparkles } from 'lucide-react-native';
 
 import { finishStory } from '@/lib/api';
 import { useCurrentNode, usePath, useStoryStore } from '@/lib/storyStore';
@@ -13,10 +12,14 @@ import { useEnsureStory } from '@/hooks/useEnsureStory';
 import { useNarration } from '@/hooks/useNarration';
 import { useSceneMedia } from '@/hooks/useSceneMedia';
 import { MediaHint } from '@/components/MediaHint';
+import { NarrationPill } from '@/components/NarrationPill';
+import { PathLine } from '@/components/PathLine';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
+import { Body, Mono } from '@/components/ui/Text';
 
 export default function EndingScreen() {
   const router = useRouter();
@@ -51,6 +54,11 @@ export default function EndingScreen() {
   const narration = useNarration(audioUrls);
   const { style: fadeStyle } = useCrossfade(node?.id ?? null);
   const { isRecordingNarration } = useSceneMedia(story, node);
+
+  const takenPath = useMemo(
+    () => decisions.map((decision) => (decision.choiceLetter.toLowerCase() === 'a' ? 0 : 1)),
+    [decisions],
+  );
 
   if (error) {
     return (
@@ -93,45 +101,46 @@ export default function EndingScreen() {
         ) : null
       }
     >
-      <View className="pt-safe-offset-4 pb-safe-offset-4 flex-1 justify-end gap-6 px-5">
-        <View className="gap-3">
-          <View className="flex-row items-center gap-3">
-            <View className="bg-accent h-[2px] w-7 rounded-full" />
-            <Display className="text-accent text-lg tracking-wide">The End</Display>
+      <View className="pt-safe-offset-4 pb-safe-offset-3 flex-1 justify-end gap-5 px-4">
+        <AnimatedView style={fadeStyle} className="gap-4">
+          <View className="gap-3 px-1">
+            <Mono className="text-[10px] tracking-[3px] uppercase">Your path</Mono>
+            <PathLine total={Math.max(takenPath.length, 3)} choices={takenPath} />
           </View>
 
-          {story.title ? <Display className="text-3xl leading-10">{story.title}</Display> : null}
+          <View
+            className="gap-4 rounded-3xl p-5"
+            style={{
+              backgroundColor: palette.panel,
+              borderWidth: 1,
+              borderColor: palette.border,
+            }}
+          >
+            <Mono className="text-[10px] tracking-[3px] uppercase" color={palette.accent}>
+              The end
+            </Mono>
 
-          <ScrollView className="max-h-52" showsVerticalScrollIndicator={false}>
-            <Text className="text-foreground text-xl leading-8">{node.text}</Text>
-          </ScrollView>
+            {story.title ? (
+              <Display className="text-[30px] leading-[36px]">{story.title}</Display>
+            ) : null}
 
-          {narration.hasAudio ? (
-            <Button
-              size="sm"
-              variant="tertiary"
-              className="border-accent/35 h-11 self-start rounded-full border px-4"
-              onPress={narration.toggle}
-            >
-              {narration.isPlaying ? (
-                <Pause size={16} color={palette.accent} />
-              ) : (
-                <Play size={16} color={palette.accent} />
-              )}
-              <Button.Label className="text-accent text-sm font-semibold">
-                {narration.isPlaying ? 'Pause narration' : 'Listen'}
-              </Button.Label>
-            </Button>
-          ) : isRecordingNarration ? (
-            <MediaHint kind="voice" />
-          ) : null}
-        </View>
+            <ScrollView className="max-h-48" showsVerticalScrollIndicator={false}>
+              <Body className="text-[17px] leading-[28px]">{node.text}</Body>
+            </ScrollView>
 
-        <View className="gap-3">
+            {narration.hasAudio ? (
+              <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
+            ) : isRecordingNarration ? (
+              <MediaHint kind="voice" />
+            ) : null}
+          </View>
+        </AnimatedView>
+
+        <View className="gap-2.5">
           {isShared ? (
-            <Button
-              size="lg"
-              className="h-14 rounded-2xl"
+            <ActionButton
+              label="See your match score"
+              icon={Percent}
               onPress={() => {
                 narration.stop();
                 router.push({
@@ -139,49 +148,38 @@ export default function EndingScreen() {
                   params: { id, path: path.join(','), owner },
                 });
               }}
-            >
-              <Percent size={20} color={palette.accentForeground} />
-              <Button.Label className="text-lg font-semibold">See Your Match Score</Button.Label>
-            </Button>
+            />
           ) : (
-            <Button
-              size="lg"
-              className="h-14 rounded-2xl"
+            <ActionButton
+              label="Share this story"
+              icon={Share2}
               onPress={() => {
                 narration.stop();
                 router.push({ pathname: '/share/[id]', params: { id } });
               }}
-            >
-              <Share2 size={20} color={palette.accentForeground} />
-              <Button.Label className="text-lg font-semibold">Share This Story</Button.Label>
-            </Button>
+            />
           )}
 
-          <Button
-            size="lg"
-            variant="tertiary"
-            className="border-border/70 h-13 rounded-2xl border"
+          <ActionButton
+            label="Replay the whole story"
+            variant="secondary"
+            icon={RefreshCw}
             onPress={() => {
               narration.stop();
               router.push({ pathname: '/replay/[id]', params: { id } });
             }}
-          >
-            <RefreshCw size={16} color={palette.foreground} />
-            <Button.Label className="text-base">Replay the whole story</Button.Label>
-          </Button>
+          />
 
-          <Button
-            size="md"
+          <ActionButton
+            label="Start a new story"
             variant="ghost"
+            icon={Sparkles}
             onPress={() => {
               narration.stop();
               clear();
               router.replace('/');
             }}
-          >
-            <Sparkles size={16} color={palette.muted} />
-            <Button.Label className="text-muted text-base">Start a new story</Button.Label>
-          </Button>
+          />
         </View>
       </View>
     </StoryBackdrop>

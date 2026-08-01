@@ -3,7 +3,8 @@ import { Platform, Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { Text } from 'heroui-native';
+import { Body, Mono } from '@/components/ui/Text';
+import { palette } from '@/lib/theme';
 
 /**
  * Install affordance for the PWA, web only:
@@ -113,34 +114,42 @@ export function InstallPrompt() {
   if (installEvent) {
     return (
       <View
-        style={{ bottom }}
-        className="border-border bg-card absolute right-4 left-4 z-50 flex-row items-center gap-3 rounded-lg border p-4 shadow-lg"
+        style={{
+          bottom,
+          backgroundColor: palette.surface,
+          borderWidth: 1,
+          borderColor: palette.border,
+        }}
+        className="absolute right-4 left-4 z-50 flex-row items-center gap-3 rounded-2xl p-4"
       >
-        <View className="flex-1">
-          <Text.Paragraph type="body-sm" weight="semibold">
+        <View className="flex-1 gap-1">
+          <Body weight="semibold" className="text-[14px]">
             Add to home screen
-          </Text.Paragraph>
-          <Text.Paragraph type="body-xs" color="muted">
+          </Body>
+          <Body className="text-muted text-[12px] leading-4">
             Install this app for a full-screen experience
-          </Text.Paragraph>
+          </Body>
         </View>
         <Pressable
           accessibilityRole="button"
-          className="rounded-md px-3 py-2"
+          className="rounded-full px-3 py-2"
           onPress={() => setInstallEvent(null)}
         >
-          <Text.Paragraph type="body-sm" weight="semibold" color="muted">
-            Not now
-          </Text.Paragraph>
+          <Mono className="text-[10px] tracking-[1px] uppercase">Not now</Mono>
         </Pressable>
         <Pressable
           accessibilityRole="button"
-          className="bg-primary rounded-md px-3 py-2"
+          className="rounded-full px-3.5 py-2.5"
+          style={{ backgroundColor: palette.accent }}
           onPress={handleInstall}
         >
-          <Text.Paragraph type="body-sm" weight="semibold" className="text-primary-foreground">
+          <Mono
+            weight="bold"
+            className="text-[10px] tracking-[1px] uppercase"
+            color={palette.background}
+          >
             Install
-          </Text.Paragraph>
+          </Mono>
         </Pressable>
       </View>
     );
@@ -149,25 +158,28 @@ export function InstallPrompt() {
   if (showIosHint) {
     return (
       <View
-        style={{ bottom }}
-        className="border-border bg-card absolute right-4 left-4 z-50 flex-row items-center gap-3 rounded-lg border p-4 shadow-lg"
+        style={{
+          bottom,
+          backgroundColor: palette.surface,
+          borderWidth: 1,
+          borderColor: palette.border,
+        }}
+        className="absolute right-4 left-4 z-50 flex-row items-center gap-3 rounded-2xl p-4"
       >
-        <View className="flex-1">
-          <Text.Paragraph type="body-sm" weight="semibold">
+        <View className="flex-1 gap-1">
+          <Body weight="semibold" className="text-[14px]">
             Add to home screen
-          </Text.Paragraph>
-          <Text.Paragraph type="body-xs" color="muted">
+          </Body>
+          <Body className="text-muted text-[12px] leading-4">
             Tap Share, then “Add to Home Screen” to install this app
-          </Text.Paragraph>
+          </Body>
         </View>
         <Pressable
           accessibilityRole="button"
-          className="rounded-md px-3 py-2"
+          className="rounded-full px-3 py-2"
           onPress={dismissIosHint}
         >
-          <Text.Paragraph type="body-sm" weight="semibold" color="muted">
-            Got it
-          </Text.Paragraph>
+          <Mono className="text-[10px] tracking-[1px] uppercase">Got it</Mono>
         </Pressable>
       </View>
     );

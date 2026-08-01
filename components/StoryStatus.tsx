@@ -7,12 +7,14 @@ import {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { Button, Text } from 'heroui-native';
-import { BookOpen, Check, TriangleAlert } from 'lucide-react-native';
+import { TriangleAlert } from 'lucide-react-native';
 
 import { GlowBackground } from '@/components/GlowBackground';
+import { PathLine } from '@/components/PathLine';
 import { Display } from '@/components/ui/Display';
+import { ActionButton } from '@/components/ui/ActionButton';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
+import { Body, Mono } from '@/components/ui/Text';
 import { palette } from '@/lib/theme';
 
 export interface LoadingStep {
@@ -26,89 +28,82 @@ interface LoadingStateProps {
   steps?: LoadingStep[];
 }
 
-function PulseRing() {
-  const pulse = useSharedValue(0);
+/** Slow amber breath on the step currently running — the only motion here. */
+function ActiveDot() {
+  const pulse = useSharedValue(0.35);
 
   useEffect(() => {
     pulse.set(
-      withRepeat(withTiming(1, { duration: 2200, easing: Easing.out(Easing.ease) }), -1, false),
+      withRepeat(withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.ease) }), -1, true),
     );
   }, [pulse]);
 
-  const outer = useAnimatedStyle(() => ({
-    opacity: 0.5 * (1 - pulse.get()),
-    transform: [{ scale: 0.75 + pulse.get() * 0.85 }],
-  }));
-
-  const inner = useAnimatedStyle(() => ({
-    opacity: 0.75 * (1 - Math.abs(pulse.get() - 0.5) * 1.4),
-    transform: [{ scale: 0.9 + pulse.get() * 0.35 }],
-  }));
+  const style = useAnimatedStyle(() => ({ opacity: pulse.get() }));
 
   return (
-    <View className="h-32 w-32 items-center justify-center">
-      <AnimatedView
-        pointerEvents="none"
-        className="border-accent absolute h-32 w-32 rounded-full border"
-        style={outer}
-      />
-      <AnimatedView
-        pointerEvents="none"
-        className="border-accent/60 absolute h-24 w-24 rounded-full border"
-        style={inner}
-      />
-      <View
-        className="border-accent/30 h-16 w-16 items-center justify-center rounded-full border"
-        style={{ backgroundColor: palette.accentSoft }}
-      >
-        <BookOpen size={26} color={palette.accent} />
-      </View>
-    </View>
+    <AnimatedView
+      style={[style, { backgroundColor: palette.accent }]}
+      className="h-2.5 w-2.5 rounded-full"
+    />
   );
 }
 
 export function LoadingState({ title, detail, steps }: LoadingStateProps) {
+  const total = steps?.length ?? 0;
+  const doneCount = steps?.filter((step) => step.state === 'done').length ?? 0;
+
   return (
     <GlowBackground>
-      <View className="flex-1 items-center justify-center gap-7 px-8">
-        <PulseRing />
+      <View className="px-safe-offset-6 flex-1 justify-center gap-8">
+        {total > 0 ? (
+          <View className="gap-4">
+            <Mono className="text-[11px] tracking-[3px] uppercase">
+              {`Step ${Math.min(doneCount + 1, total)} of ${total}`}
+            </Mono>
+            <PathLine total={total} choices={Array.from({ length: doneCount }, () => 0)} />
+          </View>
+        ) : null}
 
-        <View className="items-center gap-3">
-          <Display className="text-center text-3xl leading-9">{title}</Display>
-          {detail ? (
-            <Text className="text-muted text-center text-base leading-6">{detail}</Text>
-          ) : null}
+        <View className="gap-3">
+          <Display className="text-[32px] leading-[38px]">{title}</Display>
+          {detail ? <Body className="text-muted text-[15px] leading-6">{detail}</Body> : null}
         </View>
 
         {steps && steps.length > 0 ? (
-          <View className="border-border/60 w-full gap-3 rounded-3xl border p-5">
-            {steps.map((step) => (
+          <View
+            className="gap-4 rounded-3xl p-5"
+            style={{
+              backgroundColor: palette.surface,
+              borderWidth: 1,
+              borderColor: palette.border,
+            }}
+          >
+            {steps.map((step, index) => (
               <View key={step.label} className="flex-row items-center gap-3">
-                <View
-                  className={
-                    step.state === 'todo'
-                      ? 'border-border h-6 w-6 items-center justify-center rounded-full border'
-                      : 'border-accent/50 h-6 w-6 items-center justify-center rounded-full border'
-                  }
-                  style={{
-                    backgroundColor:
-                      step.state === 'todo' ? palette.transparent : palette.accentSoft,
-                  }}
-                >
-                  {step.state === 'done' ? <Check size={13} color={palette.accent} /> : null}
+                <Mono className="w-6 text-[11px]">{`0${index + 1}`}</Mono>
+                <View className="w-3 items-center">
                   {step.state === 'active' ? (
-                    <View className="bg-accent h-2 w-2 rounded-full" />
-                  ) : null}
+                    <ActiveDot />
+                  ) : (
+                    <View
+                      className="h-2 w-2 rounded-full"
+                      style={{
+                        backgroundColor:
+                          step.state === 'done' ? palette.accent : palette.transparent,
+                        borderWidth: step.state === 'done' ? 0 : 1,
+                        borderColor: palette.inactive,
+                      }}
+                    />
+                  )}
                 </View>
-                <Text
+                <Body
+                  weight={step.state === 'todo' ? 'regular' : 'medium'}
                   className={
-                    step.state === 'todo'
-                      ? 'text-muted flex-1 text-base'
-                      : 'text-foreground flex-1 text-base font-medium'
+                    step.state === 'todo' ? 'text-muted flex-1 text-[15px]' : 'flex-1 text-[15px]'
                   }
                 >
                   {step.label}
-                </Text>
+                </Body>
               </View>
             ))}
           </View>
@@ -137,29 +132,27 @@ export function ErrorState({
 }: ErrorStateProps) {
   return (
     <GlowBackground>
-      <View className="pb-safe-offset-6 flex-1 justify-center gap-6 px-7">
+      <View className="pb-safe-offset-6 flex-1 justify-center gap-7 px-6">
         <View
-          className="border-border/70 h-14 w-14 items-center justify-center rounded-2xl border"
-          style={{ backgroundColor: palette.emberSoft }}
+          className="h-12 w-12 items-center justify-center rounded-2xl"
+          style={{
+            backgroundColor: palette.pathASoft,
+            borderWidth: 1,
+            borderColor: palette.pathAEdge,
+          }}
         >
-          <TriangleAlert size={24} color={palette.ember} />
+          <TriangleAlert size={22} color={palette.pathA} />
         </View>
 
         <View className="gap-3">
-          <Display className="text-3xl leading-10">{title}</Display>
-          <Text className="text-muted text-base leading-7">{message}</Text>
+          <Display className="text-[30px] leading-9">{title}</Display>
+          <Body className="text-muted text-[15px] leading-7">{message}</Body>
         </View>
 
         <View className="gap-3">
-          {actionLabel && onAction ? (
-            <Button size="lg" onPress={onAction}>
-              <Button.Label className="text-base">{actionLabel}</Button.Label>
-            </Button>
-          ) : null}
+          {actionLabel && onAction ? <ActionButton label={actionLabel} onPress={onAction} /> : null}
           {secondaryLabel && onSecondary ? (
-            <Button size="lg" variant="tertiary" onPress={onSecondary}>
-              <Button.Label className="text-base">{secondaryLabel}</Button.Label>
-            </Button>
+            <ActionButton label={secondaryLabel} variant="secondary" onPress={onSecondary} />
           ) : null}
         </View>
       </View>
