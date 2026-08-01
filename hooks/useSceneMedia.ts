@@ -1,6 +1,7 @@
 import { useEffect, useMemo } from 'react';
 
 import { ensureMedia, mediaKey } from '@/lib/media';
+import { isFullyNarrated } from '@/lib/narration';
 import { hasScene, useStoryStore } from '@/lib/storyStore';
 import type { Story, StoryNode } from '@/lib/types';
 
@@ -20,12 +21,11 @@ export function useSceneMedia(story: Story | null, node: StoryNode | null): Scen
   const storyId = story?.id ?? null;
   const nodeId = node?.id ?? null;
   const hasImage = Boolean(node?.imageUrl);
-  // A scene needs one clip per line — narration plus each spoken line. A partial
-  // set (the recorder ran out of time, or lines arrived later) is topped up, so
-  // "some audio exists" is not good enough to count as done.
-  const hasAudio =
-    (node?.audioUrls.length ?? 0) >= Math.max(node?.lines.length ?? 0, 1) &&
-    (node?.audioUrls.length ?? 0) > 0;
+  // A scene needs one clip per narrated line — narration plus each spoken line.
+  // The count comes from the same helper the player uses, so a scene is never
+  // waiting on a clip the recorder would never make, nor counted done while a
+  // line is still silent.
+  const hasAudio = isFullyNarrated(node);
 
   // Only scenes that have actually been written can have art made for them.
   const nextIds = useMemo(() => {
