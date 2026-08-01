@@ -15,10 +15,19 @@ import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { Body, Mono } from '@/components/ui/Text';
 
-function verdict(score: number): string {
-  if (score >= 80) return 'Almost the same story — you two think alike.';
-  if (score >= 40) return 'Some shared instincts, some very different turns.';
-  return 'You took this story somewhere else entirely.';
+function summary(result: MatchResult, ownerName: string): string {
+  const { divergedAt, sharedCount, totalCount } = result;
+
+  if (divergedAt == null) {
+    return `Identical, decision for decision — you and ${ownerName} read the exact same story.`;
+  }
+
+  if (divergedAt === 1) {
+    return `You split on the very first decision, so nothing after the opening scene was shared. ${ownerName} read a completely different story.`;
+  }
+
+  const shared = `${sharedCount} of ${totalCount} ${sharedCount === 1 ? 'decision' : 'decisions'}`;
+  return `You stayed on the same route for ${shared}, then forked at decision ${divergedAt}. After a fork the story hands each reader different scenes, so the later choices cannot be compared.`;
 }
 
 export default function MatchScreen() {
@@ -91,6 +100,7 @@ export default function MatchScreen() {
             <MatchPaths
               ownerLetters={result.ownerPath}
               yourLetters={result.yourPath}
+              divergedAt={result.divergedAt}
               ownerName={ownerName}
             />
           </View>
@@ -98,12 +108,10 @@ export default function MatchScreen() {
           <View className="items-center">
             <Display className="text-[96px] leading-[100px]">{result.score}</Display>
             <Mono weight="bold" className="text-[11px] tracking-[4px] uppercase">
-              {`% match with ${ownerName}`}
+              {`% shared with ${ownerName}`}
             </Mono>
             <Body className="text-muted mt-4 px-4 text-center text-[15px] leading-6">
-              {`You agreed on ${result.agreedCount} of ${result.totalCount} ${
-                result.totalCount === 1 ? 'decision' : 'decisions'
-              }. ${verdict(result.score)}`}
+              {summary(result, ownerName)}
             </Body>
           </View>
         </View>

@@ -8,17 +8,27 @@ interface MatchPathsProps {
   ownerLetters: string[];
   /** The reader's own decisions, letters in order. */
   yourLetters: string[];
+  /** 1-based decision where the paths split; null when they never did. */
+  divergedAt: number | null;
   ownerName: string;
 }
+
+/**
+ * How a single decision column relates the two readers.
+ * - together: same scene, same option.
+ * - fork: same scene, different option — this is where the stories split.
+ * - apart: after the fork, so the two were choosing between different options.
+ */
+type ColumnState = 'together' | 'fork' | 'apart';
 
 interface DotProps {
   letter: string | undefined;
   color: string;
   soft: string;
-  agreed: boolean;
+  state: ColumnState;
 }
 
-function Dot({ letter, color, soft, agreed }: DotProps) {
+function Dot({ letter, color, soft, state }: DotProps) {
   if (!letter) {
     return (
       <View
@@ -30,28 +40,76 @@ function Dot({ letter, color, soft, agreed }: DotProps) {
     );
   }
 
+  // Past the fork the letters describe different scenes, so they are shown
+  // quietly: readable, but clearly not part of the comparison.
+  if (state === 'apart') {
+    return (
+      <View
+        className="h-9 w-9 items-center justify-center rounded-full border"
+        style={{ borderColor: palette.border, backgroundColor: palette.surface }}
+      >
+        <Mono className="text-[13px]" color={palette.placeholder}>
+          {letter.toUpperCase()}
+        </Mono>
+      </View>
+    );
+  }
+
+  const filled = state === 'together';
+
   return (
     <View
       className="h-9 w-9 items-center justify-center rounded-full border"
-      style={{
-        borderColor: color,
-        backgroundColor: agreed ? color : soft,
-      }}
+      style={{ borderColor: color, backgroundColor: filled ? color : soft }}
     >
-      <Mono weight="bold" className="text-[13px]" color={agreed ? palette.background : color}>
+      <Mono weight="bold" className="text-[13px]" color={filled ? palette.background : color}>
         {letter.toUpperCase()}
       </Mono>
     </View>
   );
 }
 
+function Rung({ state }: { state: ColumnState }) {
+  if (state === 'together') {
+    return (
+      <View className="h-6 justify-center">
+        <View
+          className="w-[2px] flex-1 rounded-full"
+          style={{ backgroundColor: palette.borderStrong }}
+        />
+      </View>
+    );
+  }
+
+  if (state === 'fork') {
+    return (
+      <View className="h-6 justify-between">
+        <View className="h-2 w-[2px] rounded-full" style={{ backgroundColor: palette.pathAEdge }} />
+        <View className="h-2 w-[2px] rounded-full" style={{ backgroundColor: palette.pathBEdge }} />
+      </View>
+    );
+  }
+
+  return (
+    <View className="h-6 justify-between">
+      <View className="h-1 w-[2px] rounded-full" style={{ backgroundColor: palette.border }} />
+      <View className="h-1 w-[2px] rounded-full" style={{ backgroundColor: palette.border }} />
+    </View>
+  );
+}
+
 /**
  * The match comparison, read as two subway routes stacked on top of each other:
- * the owner's path in amber, the reader's in violet-blue. A solid rung between
- * two dots means they agreed; a broken rung means the story forked there.
+ * the owner's route in amber above the reader's in violet-blue.
+ *
+ * The story is a binary tree, so the two only ever face the same options while
+ * every earlier decision matched. Columns up to the fork are compared; the fork
+ * itself is marked in both tones; everything after it is dimmed, because those
+ * decisions were taken in scenes the other person never saw.
  */
-export function MatchPaths({ ownerLetters, yourLetters, ownerName }: MatchPathsProps) {
+export function MatchPaths({ ownerLetters, yourLetters, divergedAt, ownerName }: MatchPathsProps) {
   const total = Math.max(ownerLetters.length, yourLetters.length, 1);
+  const forkAt = divergedAt ?? Number.POSITIVE_INFINITY;
 
   return (
     <View className="gap-3">
@@ -72,54 +130,43 @@ export function MatchPaths({ ownerLetters, yourLetters, ownerName }: MatchPathsP
 
       <View className="flex-row items-start justify-between">
         {Array.from({ length: total }, (_, index) => {
-          const ownerLetter = ownerLetters[index];
-          const yourLetter = yourLetters[index];
-          const agreed = Boolean(ownerLetter) && ownerLetter === yourLetter;
+          const decision = index + 1;
+          const state: ColumnState =
+            decision < forkAt ? 'together' : decision === forkAt ? 'fork' : 'apart';
 
           return (
             <View key={index} className="flex-1 items-center gap-2">
               <Dot
-                letter={ownerLetter}
+                letter={ownerLetters[index]}
                 color={palette.pathA}
                 soft={palette.pathASoft}
-                agreed={agreed}
+                state={state}
               />
 
-              <View className="h-6 justify-center">
-                {agreed ? (
-                  <View
-                    className="w-[2px] flex-1 rounded-full"
-                    style={{ backgroundColor: palette.borderStrong }}
-                  />
-                ) : (
-                  <View className="flex-1 justify-between">
-                    <View
-                      className="h-1.5 w-[2px] rounded-full"
-                      style={{ backgroundColor: palette.pathAEdge }}
-                    />
-                    <View
-                      className="h-1.5 w-[2px] rounded-full"
-                      style={{ backgroundColor: palette.pathBEdge }}
-                    />
-                  </View>
-                )}
-              </View>
+              <Rung state={state} />
 
               <Dot
-                letter={yourLetter}
+                letter={yourLetters[index]}
                 color={palette.pathB}
                 soft={palette.pathBSoft}
-                agreed={agreed}
+                state={state}
               />
 
-              <Mono className="text-[10px] tracking-[1px]">{`0${index + 1}`}</Mono>
+              <Mono
+                className="text-[10px] tracking-[1px]"
+                color={state === 'fork' ? palette.foreground : palette.muted}
+              >
+                {state === 'fork' ? 'FORK' : `0${decision}`}
+              </Mono>
             </View>
           );
         })}
       </View>
 
       <Body className="text-muted text-center text-xs leading-5">
-        Solid rung: same decision. Split rung: the story forked.
+        {divergedAt == null
+          ? 'Every decision the same — you read the exact same story.'
+          : 'Filled dots: the same scene, the same call. From the fork on you were reading different scenes, so those choices are not comparable.'}
       </Body>
     </View>
   );

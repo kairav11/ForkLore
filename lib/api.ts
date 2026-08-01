@@ -349,12 +349,18 @@ export async function finishStory(
   });
 }
 
-/** Match score against the story owner's own path, plus both paths for the diagram. */
+/**
+ * Match score against the story owner's own path, plus both paths for the
+ * diagram. Scoring is prefix-based: in a binary tree, two readers only face the
+ * same options while their earlier decisions were identical, so agreement stops
+ * counting at the first fork. `divergedAt` is that decision, 1-based.
+ */
 export async function getMatch(storyId: string, path: string[]): Promise<MatchResult> {
   const result = await invoke<{
     score?: number;
-    agreedCount?: number;
+    sharedCount?: number;
     totalCount?: number;
+    divergedAt?: number | null;
     ownerName?: string | null;
     ownerPath?: string | null;
     yourPath?: string | null;
@@ -364,12 +370,14 @@ export async function getMatch(storyId: string, path: string[]): Promise<MatchRe
   });
 
   const totalCount = Math.max(1, Math.round(result.totalCount ?? path.length));
-  const agreedCount = Math.max(0, Math.min(totalCount, Math.round(result.agreedCount ?? 0)));
+  const sharedCount = Math.max(0, Math.min(totalCount, Math.round(result.sharedCount ?? 0)));
+  const diverged = result.divergedAt == null ? null : Math.round(result.divergedAt);
 
   return {
     score: Math.max(0, Math.min(100, Math.round(result.score ?? 0))),
-    agreedCount,
+    sharedCount,
     totalCount,
+    divergedAt: diverged != null && diverged >= 1 ? diverged : null,
     ownerName: result.ownerName ?? null,
     ownerPath: splitLetters(result.ownerPath),
     yourPath: splitLetters(result.yourPath ?? path.join(',')),

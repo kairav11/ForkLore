@@ -37,10 +37,17 @@ export interface Story {
 }
 
 export interface MatchResult {
-  /** 0 - 100 */
+  /** 0 - 100, share of decisions taken together before the paths forked. */
   score: number;
-  agreedCount: number;
+  /** Decisions where both readers were on the same scene and chose the same option. */
+  sharedCount: number;
   totalCount: number;
+  /**
+   * 1-based decision where the two paths first differed, null when identical.
+   * From this decision on the two readers were offered different scenes, so
+   * their later letters are not comparable.
+   */
+  divergedAt: number | null;
   ownerName: string | null;
   /** The owner's decisions, letters in order — drawn in amber on the match screen. */
   ownerPath: string[];
