@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Text } from 'heroui-native';
@@ -24,8 +24,6 @@ const DECISIONS_PER_STORY = 3;
 export default function ReaderScreen() {
   const router = useRouter();
   const { id, mode } = useLocalSearchParams<{ id: string; mode?: PlayMode }>();
-  const { height } = useWindowDimensions();
-
   const { story, error } = useEnsureStory(id, mode ?? 'owner');
   const playMode = useStoryStore((state) => state.mode);
   const decisions = useStoryStore((state) => state.decisions);
@@ -74,27 +72,27 @@ export default function ReaderScreen() {
       : (story.title ?? 'Your story');
 
   return (
-    <StoryBackdrop imageUrl={story.backgroundImageUrl}>
-      {shownNode.imageUrl ? (
-        <AnimatedView
-          pointerEvents="none"
-          style={[
-            crossfadeStyle,
-            { position: 'absolute', left: 0, right: 0, bottom: 0, height: height * 0.68 },
-          ]}
-        >
-          <Image
-            source={{ uri: shownNode.imageUrl }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-            contentPosition="bottom"
-            transition={420}
-            cachePolicy="memory-disk"
-            accessibilityIgnoresInvertColors
-          />
-        </AnimatedView>
-      ) : null}
-
+    <StoryBackdrop
+      imageUrl={story.backgroundImageUrl}
+      underlay={
+        shownNode.imageUrl ? (
+          <AnimatedView
+            pointerEvents="none"
+            style={[crossfadeStyle, StyleSheet.absoluteFillObject]}
+          >
+            <Image
+              source={{ uri: shownNode.imageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              contentPosition="top"
+              transition={420}
+              cachePolicy="memory-disk"
+              accessibilityIgnoresInvertColors
+            />
+          </AnimatedView>
+        ) : null
+      }
+    >
       <View className="pt-safe-offset-2 pb-safe-offset-4 flex-1 px-5">
         <View className="flex-row items-start justify-between">
           <View

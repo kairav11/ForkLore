@@ -9,15 +9,23 @@ interface StoryBackdropProps {
   imageUrl: string | null;
   /** `strong` darkens the scene further for text-heavy screens. */
   overlay?: 'reading' | 'strong';
+  /** Scene artwork drawn over the base image but under the reading gradients. */
+  underlay?: ReactNode;
   children?: ReactNode;
 }
 
 /**
  * The setting's background image fills the screen and stays fixed for the whole
- * story. A top scrim keeps the controls legible, and a deep bottom gradient lets
- * story text sit straight on the artwork without a boxed-in card.
+ * story, with per-scene artwork crossfading over it via `underlay`. A top scrim
+ * keeps the controls legible, and a deep bottom gradient lets story text sit
+ * straight on the artwork without a boxed-in card.
  */
-export function StoryBackdrop({ imageUrl, overlay = 'reading', children }: StoryBackdropProps) {
+export function StoryBackdrop({
+  imageUrl,
+  overlay = 'reading',
+  underlay,
+  children,
+}: StoryBackdropProps) {
   const { width, height } = useWindowDimensions();
   const fill = { position: 'absolute', left: 0, top: 0, width, height } as const;
 
@@ -38,6 +46,8 @@ export function StoryBackdrop({ imageUrl, overlay = 'reading', children }: Story
           style={{ ...fill }}
         />
       )}
+
+      {underlay}
 
       {/* Top scrim for the floating controls. */}
       <LinearGradient

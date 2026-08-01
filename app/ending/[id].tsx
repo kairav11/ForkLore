@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { ScrollView, useWindowDimensions, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Button, Text } from 'heroui-native';
@@ -21,8 +21,6 @@ import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
 export default function EndingScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { height } = useWindowDimensions();
-
   const { story, error } = useEnsureStory(id);
   const mode = useStoryStore((state) => state.mode);
   const decisions = useStoryStore((state) => state.decisions);
@@ -76,27 +74,25 @@ export default function EndingScreen() {
   const owner = story.ownerName ?? 'the story owner';
 
   return (
-    <StoryBackdrop imageUrl={story.backgroundImageUrl}>
-      {node.imageUrl ? (
-        <AnimatedView
-          pointerEvents="none"
-          style={[
-            fadeStyle,
-            { position: 'absolute', left: 0, right: 0, bottom: 0, height: height * 0.6 },
-          ]}
-        >
-          <Image
-            source={{ uri: node.imageUrl }}
-            style={{ width: '100%', height: '100%' }}
-            contentFit="contain"
-            contentPosition="bottom"
-            transition={420}
-            cachePolicy="memory-disk"
-            accessibilityIgnoresInvertColors
-          />
-        </AnimatedView>
-      ) : null}
-
+    <StoryBackdrop
+      imageUrl={story.backgroundImageUrl}
+      overlay="strong"
+      underlay={
+        node.imageUrl ? (
+          <AnimatedView pointerEvents="none" style={[fadeStyle, StyleSheet.absoluteFillObject]}>
+            <Image
+              source={{ uri: node.imageUrl }}
+              style={{ width: '100%', height: '100%' }}
+              contentFit="cover"
+              contentPosition="top"
+              transition={420}
+              cachePolicy="memory-disk"
+              accessibilityIgnoresInvertColors
+            />
+          </AnimatedView>
+        ) : null
+      }
+    >
       <View className="pt-safe-offset-4 pb-safe-offset-4 flex-1 justify-end gap-6 px-5">
         <View className="gap-3">
           <View className="flex-row items-center gap-3">
