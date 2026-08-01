@@ -22,9 +22,13 @@ import {
   Stack,
 } from 'expo-router';
 
+import { StatusBar } from 'expo-status-bar';
+
 import { initPostHog } from '@/lib/posthog';
 import { registerServiceWorker } from '@/lib/registerServiceWorker';
 import { reportErrorToParent } from '@/lib/reportPreviewError';
+import { palette } from '@/lib/theme';
+import { AmbientAudio } from '@/components/AmbientAudio';
 import { InstallPrompt } from '@/components/InstallPrompt';
 
 /**
@@ -43,8 +47,8 @@ function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 export { ErrorBoundary };
 
-// Starter is light-only by default. Remove this when implementing requested dark mode.
-Uniwind.setTheme('light');
+// StoryBranch is a dark-only reading experience.
+Uniwind.setTheme('dark');
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -139,11 +143,30 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: palette.background }}>
       <HeroUINativeProvider>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ title: 'Habits', headerShown: false }} />
+        {/* `style` here is expo-status-bar's appearance mode ('light' | 'dark' | 'auto'),
+            not a React Native style object — the rule below doesn't distinguish the two. */}
+        {/* oxlint-disable-next-line react/style-prop-object */}
+        <StatusBar style="light" />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            animation: 'fade',
+            contentStyle: { backgroundColor: palette.background },
+          }}
+        >
+          <Stack.Screen name="index" />
+          <Stack.Screen name="loading" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="reader/[id]" options={{ gestureEnabled: false }} />
+          <Stack.Screen name="ending/[id]" />
+          <Stack.Screen name="replay/[id]" />
+          <Stack.Screen name="share/[id]" />
+          <Stack.Screen name="match/[id]" />
+          <Stack.Screen name="enter" />
+          <Stack.Screen name="story/[id]" />
         </Stack>
+        <AmbientAudio />
         <InstallPrompt />
       </HeroUINativeProvider>
     </GestureHandlerRootView>

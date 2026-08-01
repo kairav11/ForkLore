@@ -10,13 +10,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: 'NarraBranch',
-    slug: 'narrabranch',
+    name: 'StoryBranch',
+    slug: 'storybranch',
     newArchEnabled: true,
     version: process.env.BILT_APP_VERSION ?? '1.0.0',
     orientation: 'portrait',
-    userInterfaceStyle: 'automatic',
-    scheme: 'narrabranch',
+    userInterfaceStyle: 'dark',
+    scheme: 'storybranch',
     runtimeVersion: {
       policy: 'appVersion',
     },
@@ -30,6 +30,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     },
     android: {
       package: process.env.BILT_ANDROID_PACKAGE ?? 'com.yourcompany.yourapp',
+      edgeToEdgeEnabled: true,
     },
     web: {
       bundler: 'metro',

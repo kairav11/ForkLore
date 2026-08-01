@@ -6,35 +6,109 @@
 @import 'heroui-native/styles';
 
 /*
- * HeroUI Native + Uniwind tokens
- *
- * HeroUI component variants compile to semantic utilities such as bg-accent,
- * text-accent-foreground, bg-default, and text-foreground. The imported
- * heroui-native/styles package defines the default semantic theme and maps it
- * to --color-* Tailwind utilities.
- *
- * When changing brand colors, override semantic tokens inside Uniwind theme
- * variants. Do not put --accent only in a plain :root block: web may look
- * correct through CSS cascade order while Expo Go/native keeps HeroUI's
- * default blue from the active light/dark theme table.
- *
- * Example:
- *
- * @layer theme {
- *   :root {
- *     @variant light {
- *       --accent: oklch(0.63 0.18 148);
- *       --accent-foreground: oklch(0.99 0 0);
- *       --focus: var(--accent);
- *     }
- *
- *     @variant dark {
- *       --accent: oklch(0.63 0.18 148);
- *       --accent-foreground: oklch(0.99 0 0);
- *       --focus: var(--accent);
- *     }
- *   }
- * }
+ * StoryBranch theme: deep warm-neutral dark surfaces with a single warm amber
+ * accent. The app is dark-only, so the same palette is defined in both the
+ * light and dark Uniwind theme variants. This keeps native (Expo Go / Android)
+ * in sync with web instead of falling back to HeroUI's default blue accent.
  */
+@layer theme {
+  :root {
+    @variant light {
+      --background: oklch(0.16 0.011 58);
+      --foreground: oklch(0.96 0.008 80);
+
+      --surface: oklch(0.22 0.014 58);
+      --surface-foreground: var(--foreground);
+      --surface-secondary: oklch(0.26 0.015 58);
+      --surface-secondary-foreground: var(--foreground);
+      --surface-tertiary: oklch(0.3 0.015 58);
+      --surface-tertiary-foreground: var(--foreground);
+
+      --overlay: oklch(0.21 0.014 58);
+      --overlay-foreground: var(--foreground);
+      --backdrop: oklch(0% 0 0 / 60%);
+
+      --muted: oklch(0.68 0.018 72);
+
+      --default: oklch(0.27 0.015 58);
+      --default-foreground: oklch(0.94 0.01 80);
+
+      --accent: oklch(0.78 0.15 62);
+      --accent-foreground: oklch(0.2 0.03 60);
+
+      --field-background: oklch(0.24 0.015 58);
+      --field-foreground: var(--foreground);
+      --field-placeholder: var(--muted);
+      --field-border: oklch(0.34 0.016 58);
+
+      --success: oklch(0.72 0.14 160);
+      --success-foreground: oklch(0.18 0.03 160);
+      --warning: oklch(0.8 0.14 80);
+      --warning-foreground: oklch(0.2 0.03 80);
+      --danger: oklch(0.65 0.19 22);
+      --danger-foreground: oklch(0.97 0.008 22);
+
+      --segment: oklch(0.22 0.014 58);
+      --segment-foreground: var(--foreground);
+
+      --border: oklch(0.32 0.016 58);
+      --separator: oklch(0.31 0.016 58);
+      --focus: var(--accent);
+      --link: var(--accent);
+
+      --surface-shadow: 0 0 0 0 transparent inset;
+      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.24) inset;
+      --field-shadow: 0 0 0 0 transparent inset;
+    }
+
+    @variant dark {
+      --background: oklch(0.16 0.011 58);
+      --foreground: oklch(0.96 0.008 80);
+
+      --surface: oklch(0.22 0.014 58);
+      --surface-foreground: var(--foreground);
+      --surface-secondary: oklch(0.26 0.015 58);
+      --surface-secondary-foreground: var(--foreground);
+      --surface-tertiary: oklch(0.3 0.015 58);
+      --surface-tertiary-foreground: var(--foreground);
+
+      --overlay: oklch(0.21 0.014 58);
+      --overlay-foreground: var(--foreground);
+      --backdrop: oklch(0% 0 0 / 60%);
+
+      --muted: oklch(0.68 0.018 72);
+
+      --default: oklch(0.27 0.015 58);
+      --default-foreground: oklch(0.94 0.01 80);
+
+      --accent: oklch(0.78 0.15 62);
+      --accent-foreground: oklch(0.2 0.03 60);
+
+      --field-background: oklch(0.24 0.015 58);
+      --field-foreground: var(--foreground);
+      --field-placeholder: var(--muted);
+      --field-border: oklch(0.34 0.016 58);
+
+      --success: oklch(0.72 0.14 160);
+      --success-foreground: oklch(0.18 0.03 160);
+      --warning: oklch(0.8 0.14 80);
+      --warning-foreground: oklch(0.2 0.03 80);
+      --danger: oklch(0.65 0.19 22);
+      --danger-foreground: oklch(0.97 0.008 22);
+
+      --segment: oklch(0.22 0.014 58);
+      --segment-foreground: var(--foreground);
+
+      --border: oklch(0.32 0.016 58);
+      --separator: oklch(0.31 0.016 58);
+      --focus: var(--accent);
+      --link: var(--accent);
+
+      --surface-shadow: 0 0 0 0 transparent inset;
+      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.24) inset;
+      --field-shadow: 0 0 0 0 transparent inset;
+    }
+  }
+}
 
 @source './node_modules/heroui-native/lib';

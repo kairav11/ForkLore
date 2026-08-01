@@ -1,17 +1,21 @@
-import { Link, Stack } from 'expo-router';
-import { View, Text } from 'react-native';
+import { View } from 'react-native';
+import { useRouter } from 'expo-router';
+
+import { ErrorState } from '@/components/StoryStatus';
 
 export default function NotFoundScreen() {
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Oops!' }} />
-      <View>
-        <Text>This screen doesn&apos;t exist.</Text>
+  const router = useRouter();
 
-        <Link href="/">
-          <Text>Go to home screen!</Text>
-        </Link>
-      </View>
-    </>
+  return (
+    <View className="bg-background flex-1">
+      <ErrorState
+        title="This page does not exist"
+        message="The link you followed leads nowhere. Start a new story or open one a friend shared."
+        actionLabel="Start a new story"
+        onAction={() => router.replace('/')}
+        secondaryLabel="Enter a shared story"
+        onSecondary={() => router.replace('/enter')}
+      />
+    </View>
   );
 }
