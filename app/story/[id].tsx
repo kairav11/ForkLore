@@ -5,7 +5,7 @@ import { useEnsureStory } from '@/hooks/useEnsureStory';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
 
 /**
- * Deep link target for storybranch://story/<code> — loads the shared story and
+ * Deep link target for forklore://story/<code> — loads the shared story and
  * hands the reader over in "shared" mode.
  */
 export default function SharedStoryLinkScreen() {

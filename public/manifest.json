@@ -1,6 +1,6 @@
 {
-  "name": "StoryBranch",
-  "short_name": "StoryBranch",
+  "name": "ForkLore",
+  "short_name": "ForkLore",
   "description": "Write the start, choose the rest — a branching story you can share.",
   "start_url": "/",
   "scope": "/",

@@ -52,24 +52,28 @@ export function StoryBackdrop({
 
       {underlay}
 
-      {/* Flat veil: bright artwork (strobes, neon) never washes out the type. */}
+      {/* Light flat veil: enough to keep bright artwork (strobes, neon) from
+          washing out the type, not enough to grey the scene out. The weight that
+          carries the text lives in the bottom gradient instead. */}
       <View
         pointerEvents="none"
         style={[
           StyleSheet.absoluteFillObject,
-          { backgroundColor: isStrong ? 'rgba(20, 21, 26, 0.62)' : 'rgba(20, 21, 26, 0.42)' },
+          { backgroundColor: isStrong ? 'rgba(20, 21, 26, 0.44)' : 'rgba(20, 21, 26, 0.16)' },
         ]}
       />
 
-      {/* Scrim under the floating controls. */}
+      {/* Scrim under the floating controls only — kept shallow so the art starts
+          straight below the header. */}
       <LinearGradient
         pointerEvents="none"
         colors={[palette.scrim, palette.transparent]}
         locations={[0, 1]}
-        style={{ position: 'absolute', left: 0, top: 0, width, height: height * 0.26 }}
+        style={{ position: 'absolute', left: 0, top: 0, width, height: height * 0.2 }}
       />
 
-      {/* Bottom weight: the story panel and the choice pills sit on near-black. */}
+      {/* Bottom weight: the story panel and the choice pills sit on near-black,
+          while the upper half of the frame stays clear artwork. */}
       <LinearGradient
         pointerEvents="none"
         colors={
@@ -77,7 +81,7 @@ export function StoryBackdrop({
             ? [palette.transparent, palette.scrim, palette.scrimStrong]
             : [palette.transparent, palette.scrimSoft, palette.scrim]
         }
-        locations={isStrong ? [0.2, 0.55, 1] : [0.3, 0.62, 1]}
+        locations={isStrong ? [0.3, 0.62, 1] : [0.46, 0.74, 1]}
         style={{ ...fill }}
       />
 

@@ -49,7 +49,7 @@ function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 
 export { ErrorBoundary };
 
-// StoryBranch is a dark-only reading experience.
+// ForkLore is a dark-only reading experience.
 Uniwind.setTheme('dark');
 
 void SplashScreen.preventAutoHideAsync();

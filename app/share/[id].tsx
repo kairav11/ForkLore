@@ -92,7 +92,7 @@ export default function ShareScreen() {
 
   const openShareSheet = async () => {
     await Share.share({
-      message: `Read my StoryBranch story and make your own choices: ${link}\n\nOr enter the code: ${code}`,
+      message: `Read my ForkLore story and make your own choices: ${link}\n\nOr enter the code: ${code}`,
     });
   };
 

@@ -1,10 +1,11 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
+import { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { Image } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { RefreshCw, Volume2, VolumeX, X } from 'lucide-react-native';
+import { Eye, EyeOff, RefreshCw, Volume2, VolumeX, X } from 'lucide-react-native';
 
-import { findNode, useCurrentNode, useStoryStore } from '@/lib/storyStore';
+import { findNode, hasScene, useCurrentNode, useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
 import type { PlayMode } from '@/lib/types';
 import { useCrossfade } from '@/hooks/useCrossfade';
@@ -25,6 +26,7 @@ import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
 import { Body, Mono } from '@/components/ui/Text';
 
 const DECISIONS_PER_STORY = 3;
+const PEEK_MS = 220;
 
 export default function ReaderScreen() {
   const router = useRouter();
@@ -58,6 +60,14 @@ export default function ReaderScreen() {
     () => decisions.map((decision) => (decision.choiceLetter.toLowerCase() === 'a' ? 0 : 1)),
     [decisions],
   );
+
+  // Peeking fades the reading panel away so the scene art can be looked at.
+  const [isPeeking, setIsPeeking] = useState(false);
+  const peek = useSharedValue(1);
+  useEffect(() => {
+    peek.set(withTiming(isPeeking ? 0 : 1, { duration: PEEK_MS }));
+  }, [isPeeking, peek]);
+  const peekStyle = useAnimatedStyle(() => ({ opacity: peek.get() }));
 
   if (error) {
     return (
@@ -96,7 +106,7 @@ export default function ReaderScreen() {
               source={{ uri: shownNode.imageUrl }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
-              contentPosition="top"
+              contentPosition="center"
               transition={420}
               cachePolicy="memory-disk"
               accessibilityIgnoresInvertColors
@@ -107,21 +117,30 @@ export default function ReaderScreen() {
     >
       <View className="pt-safe-offset-2 pb-safe-offset-3 flex-1 px-4">
         <View className="flex-row items-start justify-between gap-3">
-          <View
+          <AnimatedView
+            pointerEvents="none"
+            style={[peekStyle, { backgroundColor: palette.panelReading }]}
             className="gap-2.5 rounded-2xl px-3.5 py-3"
-            style={{
-              backgroundColor: palette.panel,
-              borderWidth: 1,
-              borderColor: palette.border,
-            }}
           >
             <Mono className="text-[10px] tracking-[2px] uppercase">
               {`Decision ${Math.min(decisions.length + 1, DECISIONS_PER_STORY)} of ${DECISIONS_PER_STORY}`}
             </Mono>
             <PathLine total={DECISIONS_PER_STORY} choices={takenPath} />
-          </View>
+          </AnimatedView>
 
           <View className="flex-row items-center gap-2">
+            <IconButton
+              accessibilityLabel={
+                isPeeking ? 'Show the story text' : 'Hide the text to see the art'
+              }
+              onPress={() => setIsPeeking(!isPeeking)}
+            >
+              {isPeeking ? (
+                <Eye size={17} color={palette.accent} />
+              ) : (
+                <EyeOff size={17} color={palette.foreground} />
+              )}
+            </IconButton>
             <IconButton
               accessibilityLabel={ambientEnabled ? 'Mute ambient sound' : 'Unmute ambient sound'}
               onPress={() => setAmbientEnabled(!ambientEnabled)}
@@ -147,61 +166,66 @@ export default function ReaderScreen() {
 
         <View className="flex-1" />
 
-        <AnimatedView style={crossfadeStyle} className="gap-4">
-          {/* Translucent charcoal panel: the story stays readable, the art stays visible. */}
-          <View
-            className="gap-4 rounded-3xl p-5"
-            style={{
-              backgroundColor: palette.panel,
-              borderWidth: 1,
-              borderColor: palette.border,
-            }}
-          >
-            <Display weight="medium" className="text-muted text-[15px] leading-5">
-              {sceneLabel}
-            </Display>
+        <AnimatedView
+          style={peekStyle}
+          pointerEvents={isPeeking ? 'none' : 'auto'}
+          className="gap-3.5"
+        >
+          <AnimatedView style={crossfadeStyle} className="gap-3.5">
+            {/* Translucent charcoal panel, borderless: the story reads cleanly and
+                the artwork behind it stays legible as artwork. */}
+            <View
+              className="gap-3.5 rounded-3xl px-5 py-4"
+              style={{ backgroundColor: palette.panelReading }}
+            >
+              <Display weight="medium" className="text-muted text-[14px] leading-5">
+                {sceneLabel}
+              </Display>
 
-            <ScrollView className="max-h-56" showsVerticalScrollIndicator={false}>
-              <Body className="text-[17px] leading-[28px]">{shownNode.text}</Body>
-            </ScrollView>
+              <ScrollView className="max-h-44" showsVerticalScrollIndicator={false}>
+                <Body className="text-[17px] leading-[27px]">{shownNode.text}</Body>
+              </ScrollView>
 
-            {narration.hasAudio ? (
-              <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
-            ) : isRecordingNarration ? (
-              <MediaHint kind="voice" />
-            ) : null}
+              {narration.hasAudio ? (
+                <NarrationPill isPlaying={narration.isPlaying} onPress={narration.toggle} />
+              ) : isRecordingNarration ? (
+                <MediaHint kind="voice" />
+              ) : null}
 
-            {isPaintingScene ? <MediaHint kind="art" /> : null}
-            {branches.isWriting ? <MediaHint kind="writing" /> : null}
-          </View>
+              {isPaintingScene ? <MediaHint kind="art" /> : null}
+              {branches.isWriting ? <MediaHint kind="writing" /> : null}
+            </View>
 
-          <View className="gap-2.5">
-            {choices.map((choice, index) => (
-              <ChoiceButton
-                key={`${shownNode.id}-${choice.letter}`}
-                letter={choice.letter}
-                label={choice.label}
-                index={index}
-                disabled={!branches.isReady}
-                onPress={() => {
-                  narration.stop();
-                  choose(index);
-                }}
-              />
-            ))}
-
-            {branches.error && !branches.isReady ? (
-              <View className="gap-2 pt-1">
-                <Body className="text-muted text-[13px] leading-5">{branches.error}</Body>
-                <ActionButton
-                  label="Write the next scenes"
-                  variant="secondary"
-                  icon={RefreshCw}
-                  onPress={branches.retry}
+            <View className="gap-2.5">
+              {choices.map((choice, index) => (
+                <ChoiceButton
+                  key={`${shownNode.id}-${choice.letter}`}
+                  letter={choice.letter}
+                  label={choice.label}
+                  index={index}
+                  // Each option unlocks as soon as its own scene exists, so a
+                  // half-written pair still lets the reader move on.
+                  disabled={!choice.nextNodeId || !hasScene(story, choice.nextNodeId)}
+                  onPress={() => {
+                    narration.stop();
+                    choose(index);
+                  }}
                 />
-              </View>
-            ) : null}
-          </View>
+              ))}
+
+              {branches.error && !branches.isReady ? (
+                <View className="gap-2 pt-1">
+                  <Body className="text-muted text-[13px] leading-5">{branches.error}</Body>
+                  <ActionButton
+                    label="Write the next scenes"
+                    variant="secondary"
+                    icon={RefreshCw}
+                    onPress={branches.retry}
+                  />
+                </View>
+              ) : null}
+            </View>
+          </AnimatedView>
         </AnimatedView>
       </View>
     </StoryBackdrop>

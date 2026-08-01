@@ -1,7 +1,7 @@
 import type { Story } from '@/lib/types';
 
 /** Deep link prefix — matches the `scheme` in app.config.ts. */
-export const SHARE_LINK_PREFIX = 'storybranch://story/';
+export const SHARE_LINK_PREFIX = 'forklore://story/';
 
 export function shareCodeFor(story: Story): string {
   return story.shareCode ?? story.id;
@@ -12,7 +12,7 @@ export function shareLinkFor(story: Story): string {
 }
 
 /**
- * Accepts a raw share code, a storybranch:// deep link or an https link and
+ * Accepts a raw share code, a forklore:// deep link or an https link and
  * returns the story code it points at.
  */
 export function parseShareInput(input: string): string | null {

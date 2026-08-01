@@ -10,13 +10,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 
   return {
     ...config,
-    name: 'StoryBranch',
-    slug: 'storybranch',
+    name: 'ForkLore',
+    slug: 'forklore',
     newArchEnabled: true,
     version: process.env.BILT_APP_VERSION ?? '1.0.0',
     orientation: 'portrait',
     userInterfaceStyle: 'dark',
-    scheme: 'storybranch',
+    scheme: 'forklore',
     runtimeVersion: {
       policy: 'appVersion',
     },

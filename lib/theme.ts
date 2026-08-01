@@ -15,6 +15,8 @@ export const palette = {
   /** Story text panel over artwork: surface at 85%. */
   panel: 'rgba(31, 33, 40, 0.85)',
   panelSoft: 'rgba(31, 33, 40, 0.7)',
+  /** Reading panel over scene art: dark enough for type, light enough to see through. */
+  panelReading: 'rgba(16, 17, 22, 0.7)',
   foreground: '#F2EFE9',
   muted: '#9B9CA6',
   placeholder: '#6F7180',

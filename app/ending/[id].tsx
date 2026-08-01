@@ -92,7 +92,7 @@ export default function EndingScreen() {
               source={{ uri: node.imageUrl }}
               style={{ width: '100%', height: '100%' }}
               contentFit="cover"
-              contentPosition="top"
+              contentPosition="center"
               transition={420}
               cachePolicy="memory-disk"
               accessibilityIgnoresInvertColors
@@ -109,12 +109,8 @@ export default function EndingScreen() {
           </View>
 
           <View
-            className="gap-4 rounded-3xl p-5"
-            style={{
-              backgroundColor: palette.panel,
-              borderWidth: 1,
-              borderColor: palette.border,
-            }}
+            className="gap-3.5 rounded-3xl px-5 py-4"
+            style={{ backgroundColor: palette.panelReading }}
           >
             <Mono className="text-[10px] tracking-[3px] uppercase" color={palette.accent}>
               The end

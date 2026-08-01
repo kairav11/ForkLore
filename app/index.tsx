@@ -102,7 +102,7 @@ export default function SetupScreen() {
               <View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.pathA }} />
               <View className="h-[2px] w-4" style={{ backgroundColor: palette.borderStrong }} />
               <View className="h-2 w-2 rounded-full" style={{ backgroundColor: palette.pathB }} />
-              <Mono className="pl-1 text-[10px] tracking-[3px] uppercase">StoryBranch</Mono>
+              <Mono className="pl-1 text-[10px] tracking-[3px] uppercase">ForkLore</Mono>
             </View>
             <Display className="text-[40px] leading-[46px]">
               Write the start.{'\n'}Choose the rest.
