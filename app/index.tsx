@@ -9,14 +9,17 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { BookOpen, Check, KeyRound, Sparkles } from 'lucide-react-native';
+import { BookOpen, KeyRound, Sparkles } from 'lucide-react-native';
 
 import { errorMessage, generateIdea } from '@/lib/api';
-import { SETTINGS, STYLES } from '@/lib/settings';
+import type { PlaceOption } from '@/lib/places';
 import { palette } from '@/lib/theme';
-import type { SettingId, StyleId } from '@/lib/types';
+import type { StyleId } from '@/lib/types';
+import { NARRATORS, type NarratorOption } from '@/lib/voices';
 import { FieldCard } from '@/components/FieldCard';
+import { NarratorPicker } from '@/components/NarratorPicker';
 import { SettingPicker } from '@/components/SettingPicker';
+import { StylePicker } from '@/components/StylePicker';
 import { ActionButton } from '@/components/ui/ActionButton';
 import { Display } from '@/components/ui/Display';
 import { FieldInput } from '@/components/ui/FieldInput';
@@ -25,16 +28,9 @@ import { Body, Mono } from '@/components/ui/Text';
 
 const HERO: number = require('@/assets/images/setup-hero.png');
 
-/** A real sample of each treatment, so the choice is made by eye. */
-const STYLE_PREVIEWS: Record<StyleId, number> = {
-  'flat-illustrated': require('@/assets/images/style-flat.png'),
-  'comic-ink': require('@/assets/images/style-comic.png'),
-  painterly: require('@/assets/images/style-painterly.png'),
-};
-
 export default function SetupScreen() {
   const router = useRouter();
-  const [setting, setSetting] = useState<SettingId | null>(null);
+  const [place, setPlace] = useState<PlaceOption | null>(null);
   const [isPickerOpen, setPickerOpen] = useState(false);
   const [prompt, setPrompt] = useState('');
   const [isPromptFocused, setPromptFocused] = useState(false);
@@ -43,23 +39,26 @@ export default function SetupScreen() {
   const [name, setName] = useState('');
   const [isNameFocused, setNameFocused] = useState(false);
   const [styleId, setStyleId] = useState<StyleId>('flat-illustrated');
+  const [narrator, setNarrator] = useState<NarratorOption>(NARRATORS[0]);
   const [showErrors, setShowErrors] = useState(false);
 
-  const missingSetting = setting === null;
-  const settingHint = SETTINGS.find((option) => option.id === setting)?.hint;
+  const missingSetting = place === null;
 
   const handleStart = () => {
-    if (missingSetting) {
+    if (!place) {
       setShowErrors(true);
       return;
     }
     router.push({
       pathname: '/loading',
       params: {
-        setting,
+        setting: place.id,
+        settingLabel: place.label,
         style: styleId,
         prompt: prompt.trim(),
         name: name.trim(),
+        voice: narrator.id,
+        voiceName: narrator.name,
       },
     });
   };
@@ -68,7 +67,7 @@ export default function SetupScreen() {
     setIsThinking(true);
     setIdeaError(null);
     try {
-      setPrompt(await generateIdea(setting, prompt.trim()));
+      setPrompt(await generateIdea(place?.id ?? null, place?.label ?? '', prompt.trim()));
     } catch (cause) {
       setIdeaError(errorMessage(cause));
     } finally {
@@ -133,14 +132,18 @@ export default function SetupScreen() {
             label="Where it happens"
             isActive={isPickerOpen}
             error={showErrors && missingSetting ? 'Pick a setting to continue.' : null}
-            hint={settingHint ?? 'The backdrop and the ambient sound come from this place.'}
+            hint={
+              place?.hint && place.hint.length > 0
+                ? place.hint
+                : 'The backdrop and the ambient sound come from this place. Add your own if it is missing.'
+            }
           >
             <SettingPicker
-              value={setting}
+              value={place?.id ?? null}
               isOpen={isPickerOpen}
               onToggle={() => setPickerOpen(!isPickerOpen)}
-              onSelect={(id) => {
-                setSetting(id);
+              onSelect={(next) => {
+                setPlace(next);
                 setPickerOpen(false);
                 if (showErrors) setShowErrors(false);
               }}
@@ -205,58 +208,14 @@ export default function SetupScreen() {
           </FieldCard>
 
           <FieldCard label="Art style" hint="Every scene in your story is drawn this way.">
-            <View className="flex-row gap-2.5">
-              {STYLES.map((option) => {
-                const isSelected = option.id === styleId;
-                return (
-                  <Pressable
-                    key={option.id}
-                    onPress={() => setStyleId(option.id)}
-                    accessibilityRole="button"
-                    accessibilityLabel={option.label}
-                    accessibilityState={{ selected: isSelected }}
-                    className="flex-1"
-                    style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-                  >
-                    <View
-                      className="gap-2 rounded-2xl p-2"
-                      style={{
-                        backgroundColor: palette.background,
-                        borderWidth: 1,
-                        borderColor: isSelected ? palette.accent : palette.border,
-                      }}
-                    >
-                      <View className="w-full overflow-hidden rounded-xl">
-                        <Image
-                          source={STYLE_PREVIEWS[option.id]}
-                          style={{ width: '100%', height: 92 }}
-                          contentFit="cover"
-                          contentPosition="center"
-                          cachePolicy="memory-disk"
-                          accessibilityIgnoresInvertColors
-                        />
-                        {isSelected ? (
-                          <View className="absolute inset-0 items-center justify-center">
-                            <View
-                              className="h-7 w-7 items-center justify-center rounded-full"
-                              style={{ backgroundColor: 'rgba(20, 21, 26, 0.75)' }}
-                            >
-                              <Check size={15} color={palette.accent} />
-                            </View>
-                          </View>
-                        ) : null}
-                      </View>
-                      <Mono
-                        className="text-center text-[9px] tracking-[1px] uppercase"
-                        color={isSelected ? palette.accent : palette.muted}
-                      >
-                        {option.label}
-                      </Mono>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
+            <StylePicker value={styleId} onSelect={setStyleId} />
+          </FieldCard>
+
+          <FieldCard
+            label="Narrator"
+            hint="This voice reads every scene. Characters who speak get their own."
+          >
+            <NarratorPicker value={narrator.id} onSelect={setNarrator} />
           </FieldCard>
 
           <FieldCard

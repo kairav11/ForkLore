@@ -1,7 +1,7 @@
 import { FunctionsHttpError } from '@biltme/backend';
 
 import { bilt, isBackendConfigured } from '@/lib/bilt';
-import { SETTINGS, settingLabel, STYLES, styleLabel } from '@/lib/settings';
+import { STYLES, stylePrompt } from '@/lib/settings';
 import { SHARE_LINK_PREFIX } from '@/lib/share';
 import type {
   CreateStoryInput,
@@ -10,7 +10,6 @@ import type {
   MediaResult,
   MediaTarget,
   PlayMode,
-  SettingId,
   Story,
   StoryChoice,
   StoryLine,
@@ -18,6 +17,7 @@ import type {
   StyleId,
   WordMark,
 } from '@/lib/types';
+import { NARRATOR_DEMO_LINE, type NarratorOption } from '@/lib/voices';
 
 export class ApiError extends Error {
   constructor(message: string) {
@@ -186,16 +186,8 @@ function toStoryRead(value: unknown): StoryRead {
   return { story, nodes };
 }
 
-function isSettingId(value: string): value is SettingId {
-  return SETTINGS.some((option) => option.id === value);
-}
-
 function isStyleId(value: string): value is StyleId {
   return STYLES.some((option) => option.id === value);
-}
-
-function toSettingId(value: string): SettingId | null {
-  return isSettingId(value) ? value : null;
 }
 
 function toStyleId(value: string): StyleId | null {
@@ -306,7 +298,8 @@ function mapStory(row: StoryRow, nodeRows: NodeRow[]): Story {
   return {
     id: row.id,
     title: row.title,
-    settingId: toSettingId(row.setting_id),
+    // Places are data now, so whatever the story was created with is kept as is.
+    settingId: row.setting_id,
     styleId: toStyleId(row.style_id),
     ownerName: row.owner_name,
     backgroundImageUrl: row.background_image_url,
@@ -331,11 +324,14 @@ function mapStory(row: StoryRow, nodeRows: NodeRow[]): Story {
 export async function createStory(input: CreateStoryInput): Promise<Story> {
   const created = await invoke<{ id?: string }>('story-create', {
     settingId: input.settingId,
-    settingLabel: settingLabel(input.settingId),
+    settingLabel: input.settingLabel,
     styleId: input.styleId,
-    styleLabel: styleLabel(input.styleId),
+    // The full treatment, not just the name: it is what the images are drawn to.
+    styleLabel: stylePrompt(input.styleId),
     prompt: input.prompt,
     ownerName: input.ownerName ?? '',
+    narratorVoiceId: input.narratorVoiceId ?? '',
+    narratorLabel: input.narratorLabel ?? '',
   });
 
   if (!created.id) throw new ApiError(GENERIC_FAILURE);
@@ -343,13 +339,41 @@ export async function createStory(input: CreateStoryInput): Promise<Story> {
 }
 
 /**
+ * A playable demo clip for each narrator offered on the setup screen, keyed by
+ * voice id. A voice with no clip comes back as null, and a failed call as an
+ * empty map — the picker then simply has nothing to play.
+ */
+export async function fetchNarratorPreviews(
+  narrators: readonly NarratorOption[],
+): Promise<Record<string, string>> {
+  const result = await invoke<{ previews?: unknown }>('story-voices', {
+    voiceIds: narrators.map((option) => option.id),
+    demoText: NARRATOR_DEMO_LINE,
+  });
+
+  const previews = result.previews;
+  if (typeof previews !== 'object' || previews === null) return {};
+
+  const entries: [string, string][] = narrators.flatMap((option) => {
+    const url: unknown = Reflect.get(previews, option.id);
+    return typeof url === 'string' && url.length > 0 ? [[option.id, url]] : [];
+  });
+
+  return Object.fromEntries(entries);
+}
+
+/**
  * One story premise for the setup screen's spark button. `avoid` is whatever is
  * already in the field, so tapping again gives a different idea.
  */
-export async function generateIdea(settingId: SettingId | null, avoid?: string): Promise<string> {
+export async function generateIdea(
+  settingId: string | null,
+  settingLabel: string,
+  avoid?: string,
+): Promise<string> {
   const result = await invoke<{ idea?: string }>('story-idea', {
     settingId: settingId ?? '',
-    settingLabel: settingId ? settingLabel(settingId) : '',
+    settingLabel,
     avoid: avoid ?? '',
   });
 

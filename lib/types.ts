@@ -1,6 +1,20 @@
-export type SettingId = 'school' | 'club' | 'bar' | 'city-center' | 'tv-tower';
+/**
+ * A place the story happens in. Not a fixed union any more: the five originals
+ * ship with the app, and readers can add their own, which every reader then sees
+ * (see `lib/places.ts`).
+ */
+export type SettingId = string;
 
-export type StyleId = 'flat-illustrated' | 'comic-ink' | 'painterly';
+export type StyleId =
+  | 'flat-illustrated'
+  | 'comic-ink'
+  | 'painterly'
+  | 'anime-cel'
+  | 'watercolour'
+  | 'noir-film'
+  | 'pixel-art'
+  | 'storybook'
+  | 'retro-print';
 
 export interface StoryChoice {
   /** Letter used in the path string: a, b, ... */
@@ -83,11 +97,17 @@ export interface MatchResult {
 
 export interface CreateStoryInput {
   settingId: SettingId;
+  /** The place's name, sent along because custom places are not in the app. */
+  settingLabel: string;
   /** May be empty — the writer then invents the premise. */
   prompt: string;
   styleId: StyleId;
   /** Shown to friends on the match screen. */
   ownerName?: string;
+  /** ElevenLabs voice that narrates every scene of this story. */
+  narratorVoiceId?: string;
+  /** That voice's name, kept with the story so it can be shown later. */
+  narratorLabel?: string;
 }
 
 /** A decision the current player made, in order. */

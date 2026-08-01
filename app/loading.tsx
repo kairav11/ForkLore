@@ -4,9 +4,8 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { createStory, errorMessage } from '@/lib/api';
 import { ensureBranch } from '@/lib/branches';
 import { ensureMedia } from '@/lib/media';
-import { settingLabel } from '@/lib/settings';
 import { useStoryStore } from '@/lib/storyStore';
-import type { SettingId, StyleId } from '@/lib/types';
+import type { StyleId } from '@/lib/types';
 import { ErrorState, LoadingState, type LoadingStep } from '@/components/StoryStatus';
 
 type Stage = 'writing' | 'painting' | 'ready';
@@ -37,10 +36,13 @@ function stepsFor(stage: Stage): LoadingStep[] {
 export default function LoadingScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{
-    setting: SettingId;
+    setting: string;
+    settingLabel?: string;
     style: StyleId;
     prompt?: string;
     name?: string;
+    voice?: string;
+    voiceName?: string;
   }>();
   const loadStory = useStoryStore((state) => state.loadStory);
 
@@ -48,7 +50,8 @@ export default function LoadingScreen() {
   const [stage, setStage] = useState<Stage>('writing');
   const [attempt, setAttempt] = useState(0);
 
-  const { setting, style, prompt, name } = params;
+  const { setting, settingLabel, style, prompt, name, voice, voiceName } = params;
+  const placeLabel = settingLabel ?? 'Your story';
 
   useEffect(() => {
     let cancelled = false;
@@ -58,10 +61,15 @@ export default function LoadingScreen() {
     const run = async () => {
       const story = await createStory({
         settingId: setting,
+        // The label travels with the id: places are shared data, so a custom one
+        // is not in the app's own list.
+        settingLabel: placeLabel,
         // Empty is allowed: the writer invents the premise instead.
         prompt: prompt ?? '',
         styleId: style,
         ownerName: name,
+        narratorVoiceId: voice,
+        narratorLabel: voiceName,
       });
       if (cancelled) return;
 
@@ -91,7 +99,7 @@ export default function LoadingScreen() {
     return () => {
       cancelled = true;
     };
-  }, [setting, style, prompt, name, attempt, loadStory, router]);
+  }, [setting, placeLabel, style, prompt, name, voice, voiceName, attempt, loadStory, router]);
 
   const retry = useCallback(() => setAttempt((value) => value + 1), []);
 
@@ -111,7 +119,7 @@ export default function LoadingScreen() {
   return (
     <LoadingState
       title={STAGE_TITLES[stage]}
-      detail={`${settingLabel(setting)} · this takes a moment, everything is made fresh for you.`}
+      detail={`${placeLabel} · this takes a moment, everything is made fresh for you.`}
       steps={stepsFor(stage)}
     />
   );
