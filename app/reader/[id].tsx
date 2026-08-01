@@ -11,9 +11,15 @@ import type { PlayMode } from '@/lib/types';
 import { useCrossfade } from '@/hooks/useCrossfade';
 import { useEnsureStory } from '@/hooks/useEnsureStory';
 import { useNarration } from '@/hooks/useNarration';
+import { useSceneMedia } from '@/hooks/useSceneMedia';
+import { ChoiceButton } from '@/components/ChoiceButton';
+import { MediaHint } from '@/components/MediaHint';
+import { SceneProgress } from '@/components/SceneProgress';
 import { StoryBackdrop } from '@/components/StoryBackdrop';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
 import { AnimatedView } from '@/components/ui/primitives/AnimatedView';
+
+const DECISIONS_PER_STORY = 3;
 
 export default function ReaderScreen() {
   const router = useRouter();
@@ -41,6 +47,7 @@ export default function ReaderScreen() {
   const shownNode = story && shownNodeId ? findNode(story, shownNodeId) : null;
   const audioUrls = useMemo(() => shownNode?.audioUrls ?? [], [shownNode]);
   const narration = useNarration(audioUrls);
+  const { isPaintingScene, isRecordingNarration } = useSceneMedia(story, shownNode);
 
   if (error) {
     return (
@@ -57,10 +64,14 @@ export default function ReaderScreen() {
   }
 
   if (!story || !shownNode) {
-    return <LoadingState title="Opening your story..." />;
+    return <LoadingState title="Opening your story…" />;
   }
 
   const choices = shownNode.choices.slice(0, 2);
+  const sceneLabel =
+    playMode === 'shared' && story.ownerName
+      ? `${story.ownerName}'s story`
+      : (story.title ?? 'Your story');
 
   return (
     <StoryBackdrop imageUrl={story.backgroundImageUrl}>
@@ -69,7 +80,7 @@ export default function ReaderScreen() {
           pointerEvents="none"
           style={[
             crossfadeStyle,
-            { position: 'absolute', left: 0, right: 0, bottom: 0, height: height * 0.66 },
+            { position: 'absolute', left: 0, right: 0, bottom: 0, height: height * 0.68 },
           ]}
         >
           <Image
@@ -85,32 +96,37 @@ export default function ReaderScreen() {
       ) : null}
 
       <View className="pt-safe-offset-2 pb-safe-offset-4 flex-1 px-5">
-        <View className="flex-row items-center justify-between">
-          <View className="bg-background/60 rounded-full px-3 py-1.5">
-            <Text className="text-muted text-sm font-semibold tracking-wide">
-              {playMode === 'shared' && story.ownerName
-                ? `${story.ownerName}'s story · Scene ${decisions.length + 1}`
-                : `Scene ${decisions.length + 1}`}
+        <View className="flex-row items-start justify-between">
+          <View
+            className="gap-2 rounded-2xl px-3 py-2"
+            style={{ backgroundColor: 'rgba(13, 10, 6, 0.55)' }}
+          >
+            <Text numberOfLines={1} className="text-foreground max-w-[190px] text-sm font-semibold">
+              {sceneLabel}
             </Text>
+            <SceneProgress total={DECISIONS_PER_STORY} made={decisions.length} />
           </View>
-          <View className="flex-row items-center gap-1">
+
+          <View className="flex-row items-center gap-2">
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 px-0"
+              className="h-10 w-10 rounded-full px-0"
+              style={{ backgroundColor: 'rgba(13, 10, 6, 0.55)' }}
               accessibilityLabel={ambientEnabled ? 'Mute ambient sound' : 'Unmute ambient sound'}
               onPress={() => setAmbientEnabled(!ambientEnabled)}
             >
               {ambientEnabled ? (
-                <Volume2 size={20} color={palette.foreground} />
+                <Volume2 size={18} color={palette.foreground} />
               ) : (
-                <VolumeX size={20} color={palette.muted} />
+                <VolumeX size={18} color={palette.muted} />
               )}
             </Button>
             <Button
               size="sm"
               variant="ghost"
-              className="h-11 w-11 px-0"
+              className="h-10 w-10 rounded-full px-0"
+              style={{ backgroundColor: 'rgba(13, 10, 6, 0.55)' }}
               accessibilityLabel="Leave story"
               onPress={() => {
                 narration.stop();
@@ -118,54 +134,61 @@ export default function ReaderScreen() {
                 router.replace('/');
               }}
             >
-              <X size={20} color={palette.foreground} />
+              <X size={18} color={palette.foreground} />
             </Button>
           </View>
         </View>
 
         <View className="flex-1" />
 
-        <AnimatedView style={crossfadeStyle} className="gap-4">
-          <View className="bg-background/85 border-border/60 rounded-3xl border p-5">
-            <ScrollView className="max-h-56" showsVerticalScrollIndicator={false}>
+        <AnimatedView style={crossfadeStyle} className="gap-5">
+          <View className="gap-3">
+            <View className="flex-row items-center gap-3">
+              <View className="bg-accent h-[2px] w-7 rounded-full" />
+              <Text className="text-accent text-[11px] font-bold tracking-[3px] uppercase">
+                Scene {decisions.length + 1}
+              </Text>
+            </View>
+
+            <ScrollView className="max-h-60" showsVerticalScrollIndicator={false}>
               <Text className="text-foreground text-xl leading-8">{shownNode.text}</Text>
             </ScrollView>
 
             {narration.hasAudio ? (
               <Button
-                size="md"
+                size="sm"
                 variant="tertiary"
-                className="mt-4 self-start"
+                className="border-accent/35 h-11 self-start rounded-full border px-4"
                 onPress={narration.toggle}
               >
                 {narration.isPlaying ? (
-                  <Pause size={18} color={palette.accent} />
+                  <Pause size={16} color={palette.accent} />
                 ) : (
-                  <Play size={18} color={palette.accent} />
+                  <Play size={16} color={palette.accent} />
                 )}
-                <Button.Label className="text-base">
-                  {narration.isPlaying ? 'Pause narration' : 'Play narration'}
+                <Button.Label className="text-accent text-sm font-semibold">
+                  {narration.isPlaying ? 'Pause narration' : 'Listen'}
                 </Button.Label>
               </Button>
+            ) : isRecordingNarration ? (
+              <MediaHint kind="voice" />
             ) : null}
+
+            {isPaintingScene ? <MediaHint kind="art" /> : null}
           </View>
 
           <View className="gap-3">
             {choices.map((choice, index) => (
-              <Button
+              <ChoiceButton
                 key={`${shownNode.id}-${choice.letter}`}
-                size="lg"
-                variant={index === 0 ? 'primary' : 'secondary'}
-                className="h-auto min-h-14 py-4"
+                letter={choice.letter}
+                label={choice.label}
+                emphasis={index === 0 ? 'primary' : 'secondary'}
                 onPress={() => {
                   narration.stop();
                   choose(index);
                 }}
-              >
-                <Button.Label className="text-center text-lg leading-6">
-                  {choice.label}
-                </Button.Label>
-              </Button>
+              />
             ))}
           </View>
         </AnimatedView>

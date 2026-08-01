@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
 
 @import 'tailwindcss';
 @import 'uniwind';
@@ -6,40 +7,45 @@
 @import 'heroui-native/styles';
 
 /*
- * StoryBranch theme: deep warm-neutral dark surfaces with a single warm amber
- * accent. The app is dark-only, so the same palette is defined in both the
- * light and dark Uniwind theme variants. This keeps native (Expo Go / Android)
- * in sync with web instead of falling back to HeroUI's default blue accent.
+ * StoryBranch theme: near-black warm surfaces lit by a single amber accent,
+ * with an ember tint for gradients. The app is dark-only, so the same palette is
+ * defined in both the light and dark Uniwind theme variants. This keeps native
+ * (Expo Go / Android) in sync with web instead of falling back to HeroUI's
+ * default blue accent.
  */
+@theme {
+  --color-ember: oklch(0.62 0.17 32);
+}
+
 @layer theme {
   :root {
     @variant light {
-      --background: oklch(0.16 0.011 58);
-      --foreground: oklch(0.96 0.008 80);
+      --background: oklch(0.14 0.014 46);
+      --foreground: oklch(0.965 0.01 84);
 
-      --surface: oklch(0.22 0.014 58);
+      --surface: oklch(0.205 0.017 46);
       --surface-foreground: var(--foreground);
-      --surface-secondary: oklch(0.26 0.015 58);
+      --surface-secondary: oklch(0.245 0.018 46);
       --surface-secondary-foreground: var(--foreground);
-      --surface-tertiary: oklch(0.3 0.015 58);
+      --surface-tertiary: oklch(0.285 0.019 46);
       --surface-tertiary-foreground: var(--foreground);
 
-      --overlay: oklch(0.21 0.014 58);
+      --overlay: oklch(0.19 0.016 46);
       --overlay-foreground: var(--foreground);
-      --backdrop: oklch(0% 0 0 / 60%);
+      --backdrop: oklch(0% 0 0 / 66%);
 
-      --muted: oklch(0.68 0.018 72);
+      --muted: oklch(0.685 0.022 74);
 
-      --default: oklch(0.27 0.015 58);
-      --default-foreground: oklch(0.94 0.01 80);
+      --default: oklch(0.26 0.018 46);
+      --default-foreground: oklch(0.945 0.012 84);
 
-      --accent: oklch(0.78 0.15 62);
-      --accent-foreground: oklch(0.2 0.03 60);
+      --accent: oklch(0.8 0.155 64);
+      --accent-foreground: oklch(0.21 0.045 60);
 
-      --field-background: oklch(0.24 0.015 58);
+      --field-background: oklch(0.225 0.017 46);
       --field-foreground: var(--foreground);
       --field-placeholder: var(--muted);
-      --field-border: oklch(0.34 0.016 58);
+      --field-border: oklch(0.32 0.018 46);
 
       --success: oklch(0.72 0.14 160);
       --success-foreground: oklch(0.18 0.03 160);
@@ -48,46 +54,46 @@
       --danger: oklch(0.65 0.19 22);
       --danger-foreground: oklch(0.97 0.008 22);
 
-      --segment: oklch(0.22 0.014 58);
+      --segment: oklch(0.205 0.017 46);
       --segment-foreground: var(--foreground);
 
-      --border: oklch(0.32 0.016 58);
-      --separator: oklch(0.31 0.016 58);
+      --border: oklch(0.305 0.018 46);
+      --separator: oklch(0.295 0.018 46);
       --focus: var(--accent);
       --link: var(--accent);
 
       --surface-shadow: 0 0 0 0 transparent inset;
-      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.24) inset;
+      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.22) inset;
       --field-shadow: 0 0 0 0 transparent inset;
     }
 
     @variant dark {
-      --background: oklch(0.16 0.011 58);
-      --foreground: oklch(0.96 0.008 80);
+      --background: oklch(0.14 0.014 46);
+      --foreground: oklch(0.965 0.01 84);
 
-      --surface: oklch(0.22 0.014 58);
+      --surface: oklch(0.205 0.017 46);
       --surface-foreground: var(--foreground);
-      --surface-secondary: oklch(0.26 0.015 58);
+      --surface-secondary: oklch(0.245 0.018 46);
       --surface-secondary-foreground: var(--foreground);
-      --surface-tertiary: oklch(0.3 0.015 58);
+      --surface-tertiary: oklch(0.285 0.019 46);
       --surface-tertiary-foreground: var(--foreground);
 
-      --overlay: oklch(0.21 0.014 58);
+      --overlay: oklch(0.19 0.016 46);
       --overlay-foreground: var(--foreground);
-      --backdrop: oklch(0% 0 0 / 60%);
+      --backdrop: oklch(0% 0 0 / 66%);
 
-      --muted: oklch(0.68 0.018 72);
+      --muted: oklch(0.685 0.022 74);
 
-      --default: oklch(0.27 0.015 58);
-      --default-foreground: oklch(0.94 0.01 80);
+      --default: oklch(0.26 0.018 46);
+      --default-foreground: oklch(0.945 0.012 84);
 
-      --accent: oklch(0.78 0.15 62);
-      --accent-foreground: oklch(0.2 0.03 60);
+      --accent: oklch(0.8 0.155 64);
+      --accent-foreground: oklch(0.21 0.045 60);
 
-      --field-background: oklch(0.24 0.015 58);
+      --field-background: oklch(0.225 0.017 46);
       --field-foreground: var(--foreground);
       --field-placeholder: var(--muted);
-      --field-border: oklch(0.34 0.016 58);
+      --field-border: oklch(0.32 0.018 46);
 
       --success: oklch(0.72 0.14 160);
       --success-foreground: oklch(0.18 0.03 160);
@@ -96,16 +102,16 @@
       --danger: oklch(0.65 0.19 22);
       --danger-foreground: oklch(0.97 0.008 22);
 
-      --segment: oklch(0.22 0.014 58);
+      --segment: oklch(0.205 0.017 46);
       --segment-foreground: var(--foreground);
 
-      --border: oklch(0.32 0.016 58);
-      --separator: oklch(0.31 0.016 58);
+      --border: oklch(0.305 0.018 46);
+      --separator: oklch(0.295 0.018 46);
       --focus: var(--accent);
       --link: var(--accent);
 
       --surface-shadow: 0 0 0 0 transparent inset;
-      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.24) inset;
+      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.22) inset;
       --field-shadow: 0 0 0 0 transparent inset;
     }
   }

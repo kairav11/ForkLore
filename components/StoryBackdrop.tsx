@@ -7,33 +7,58 @@ import { palette } from '@/lib/theme';
 
 interface StoryBackdropProps {
   imageUrl: string | null;
+  /** `strong` darkens the scene further for text-heavy screens. */
+  overlay?: 'reading' | 'strong';
   children?: ReactNode;
 }
 
 /**
  * The setting's background image fills the screen and stays fixed for the whole
- * story, with a gradient scrim so story text stays readable on top of it.
+ * story. A top scrim keeps the controls legible, and a deep bottom gradient lets
+ * story text sit straight on the artwork without a boxed-in card.
  */
-export function StoryBackdrop({ imageUrl, children }: StoryBackdropProps) {
+export function StoryBackdrop({ imageUrl, overlay = 'reading', children }: StoryBackdropProps) {
   const { width, height } = useWindowDimensions();
+  const fill = { position: 'absolute', left: 0, top: 0, width, height } as const;
 
   return (
     <View className="bg-background flex-1">
       {imageUrl ? (
         <Image
           source={{ uri: imageUrl }}
-          style={{ position: 'absolute', left: 0, top: 0, width, height }}
+          style={{ ...fill }}
           contentFit="cover"
-          transition={600}
+          transition={700}
           cachePolicy="memory-disk"
           accessibilityIgnoresInvertColors
         />
-      ) : null}
+      ) : (
+        <LinearGradient
+          colors={[palette.surface, palette.background, palette.backgroundDeep]}
+          style={{ ...fill }}
+        />
+      )}
+
+      {/* Top scrim for the floating controls. */}
       <LinearGradient
-        colors={[palette.scrim, palette.scrimSoft, palette.scrim, palette.background]}
-        locations={[0, 0.32, 0.7, 1]}
-        style={{ position: 'absolute', left: 0, top: 0, width, height }}
+        pointerEvents="none"
+        colors={[palette.scrim, palette.transparent]}
+        locations={[0, 1]}
+        style={{ position: 'absolute', left: 0, top: 0, width, height: height * 0.28 }}
       />
+
+      {/* Reading gradient: art stays visible up top, text sits on near-black. */}
+      <LinearGradient
+        pointerEvents="none"
+        colors={
+          overlay === 'strong'
+            ? [palette.scrim, palette.scrimStrong, palette.backgroundDeep]
+            : [palette.transparent, palette.scrim, palette.scrimStrong]
+        }
+        locations={overlay === 'strong' ? [0, 0.45, 1] : [0.28, 0.6, 0.92]}
+        style={{ ...fill }}
+      />
+
       {children}
     </View>
   );

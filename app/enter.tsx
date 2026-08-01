@@ -12,12 +12,15 @@ import {
   Text,
   TextField,
 } from 'heroui-native';
-import { ChevronLeft, ClipboardPaste, DoorOpen } from 'lucide-react-native';
+import { ClipboardPaste, DoorOpen } from 'lucide-react-native';
 
 import { errorMessage, getStory } from '@/lib/api';
 import { parseShareInput } from '@/lib/share';
 import { useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
+import { GlowBackground } from '@/components/GlowBackground';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { Display } from '@/components/ui/Display';
 
 export default function EnterSharedStoryScreen() {
   const router = useRouter();
@@ -55,75 +58,71 @@ export default function EnterSharedStoryScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      className="bg-background flex-1"
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
+    <GlowBackground>
+      <KeyboardAvoidingView
         className="flex-1"
-        contentContainerClassName="px-5 pt-safe-offset-3 pb-10 gap-6"
-        keyboardShouldPersistTaps="handled"
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
-        <View className="flex-row items-center gap-2">
-          <Button
-            size="sm"
-            variant="ghost"
-            className="h-11 w-11 px-0"
-            accessibilityLabel="Go back"
-            onPress={() => router.back()}
-          >
-            <ChevronLeft size={22} color={palette.foreground} />
-          </Button>
-          <Text className="text-foreground text-lg font-semibold">Enter a shared story</Text>
-        </View>
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="px-5 pt-safe-offset-2 pb-10 gap-7"
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <ScreenHeader title="Shared story" onBack={() => router.back()} />
 
-        <View className="gap-2">
-          <Text.Heading type="h2" className="text-3xl leading-tight">
-            Read your friend&apos;s story
-          </Text.Heading>
-          <Text.Paragraph color="muted" className="text-base leading-6">
-            Make your own decisions, then see how closely you matched.
-          </Text.Paragraph>
-        </View>
+          <View className="gap-3">
+            <Display className="text-[34px] leading-[42px]">Read your friend&apos;s story</Display>
+            <Text className="text-muted text-base leading-7">
+              Same setting, same scenes — your own decisions. At the end you find out how closely
+              the two of you matched.
+            </Text>
+          </View>
 
-        <TextField isInvalid={error !== null}>
-          <Label className="text-lg">Story code or link</Label>
-          <Input
-            value={input}
-            onChangeText={(text) => {
-              setInput(text);
-              if (error) setError(null);
-            }}
-            placeholder="e.g. 8FJ3KD or storybranch://story/8FJ3KD"
-            autoCapitalize="characters"
-            autoCorrect={false}
-            className="h-14 text-lg"
-            onSubmitEditing={() => void openStory()}
-          />
-          {error ? (
-            <FieldError>{error}</FieldError>
-          ) : (
-            <Description>Paste the whole link — we will find the code in it.</Description>
-          )}
-        </TextField>
-
-        <View className="gap-3">
-          <Button size="lg" isDisabled={isOpening} onPress={() => void openStory()}>
-            {isOpening ? (
-              <Spinner size="sm" color={palette.accentForeground} />
+          <TextField isInvalid={error !== null}>
+            <Label className="text-base">Story code or link</Label>
+            <Input
+              value={input}
+              onChangeText={(text) => {
+                setInput(text);
+                if (error) setError(null);
+              }}
+              placeholder="8FJ3KD"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              className="h-14 rounded-2xl text-xl tracking-[3px]"
+              onSubmitEditing={() => void openStory()}
+            />
+            {error ? (
+              <FieldError>{error}</FieldError>
             ) : (
-              <DoorOpen size={20} color={palette.accentForeground} />
+              <Description>Paste the whole link too — we will find the code in it.</Description>
             )}
-            <Button.Label className="text-lg">
-              {isOpening ? 'Opening story...' : 'Open Story'}
-            </Button.Label>
-          </Button>
-          <Button size="lg" variant="ghost" onPress={() => void pasteFromClipboard()}>
-            <ClipboardPaste size={18} color={palette.muted} />
-            <Button.Label className="text-base">Paste from clipboard</Button.Label>
-          </Button>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          </TextField>
+
+          <View className="gap-2">
+            <Button
+              size="lg"
+              className="h-14 rounded-2xl"
+              isDisabled={isOpening}
+              onPress={() => void openStory()}
+            >
+              {isOpening ? (
+                <Spinner size="sm" color={palette.accentForeground} />
+              ) : (
+                <DoorOpen size={20} color={palette.accentForeground} />
+              )}
+              <Button.Label className="text-lg font-semibold">
+                {isOpening ? 'Opening story…' : 'Open Story'}
+              </Button.Label>
+            </Button>
+            <Button size="md" variant="ghost" onPress={() => void pasteFromClipboard()}>
+              <ClipboardPaste size={16} color={palette.muted} />
+              <Button.Label className="text-muted text-base">Paste from clipboard</Button.Label>
+            </Button>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </GlowBackground>
   );
 }

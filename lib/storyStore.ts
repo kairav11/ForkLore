@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { create } from 'zustand';
 
-import type { Decision, PlayMode, Story, StoryNode } from '@/lib/types';
+import type { Decision, MediaResult, PlayMode, Story, StoryNode } from '@/lib/types';
 
 export function findNode(story: Story, nodeId: string): StoryNode | null {
   return story.nodes.find((node) => node.id === nodeId) ?? null;
@@ -13,10 +13,14 @@ interface StoryStoreState {
   currentNodeId: string | null;
   decisions: Decision[];
   ambientEnabled: boolean;
+  /** Keyed by `target:nodeKey` while that asset is being generated. */
+  pendingMedia: Record<string, boolean>;
   loadStory: (story: Story, mode: PlayMode) => void;
   choose: (choiceIndex: number) => void;
   restart: () => void;
   setAmbientEnabled: (enabled: boolean) => void;
+  setMediaPending: (key: string, pending: boolean) => void;
+  applyMedia: (storyId: string, result: MediaResult, nodeKey?: string) => void;
   clear: () => void;
 }
 
@@ -26,6 +30,7 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
   currentNodeId: null,
   decisions: [],
   ambientEnabled: true,
+  pendingMedia: {},
 
   loadStory: (story, mode) => {
     set({ story, mode, currentNodeId: story.startNodeId, decisions: [] });
@@ -39,15 +44,12 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
     const choice = node?.choices[choiceIndex];
     if (!node || !choice) return;
 
-    // Fall back to the next node in document order when the backend omits a target.
-    const fallbackIndex = story.nodes.findIndex((item) => item.id === node.id) + 1;
-    const nextId = choice.nextNodeId ?? story.nodes[fallbackIndex]?.id ?? null;
+    const nextId = choice.nextNodeId;
     if (!nextId || !findNode(story, nextId)) return;
 
     const decision: Decision = {
       nodeId: node.id,
       nodeText: node.text,
-      nodeImageUrl: node.imageUrl,
       choiceLetter: choice.letter,
       choiceLabel: choice.label,
     };
@@ -63,7 +65,49 @@ export const useStoryStore = create<StoryStoreState>()((set, get) => ({
 
   setAmbientEnabled: (enabled) => set({ ambientEnabled: enabled }),
 
-  clear: () => set({ story: null, currentNodeId: null, decisions: [], mode: 'owner' }),
+  setMediaPending: (key, pending) => {
+    const { pendingMedia } = get();
+    if ((pendingMedia[key] ?? false) === pending) return;
+    set({ pendingMedia: { ...pendingMedia, [key]: pending } });
+  },
+
+  applyMedia: (storyId, result, nodeKey) => {
+    const { story } = get();
+    if (!story || story.id !== storyId) return;
+
+    let next = story;
+
+    if (result.backgroundImageUrl) {
+      next = { ...next, backgroundImageUrl: result.backgroundImageUrl };
+    }
+    if (result.backgroundAudioUrl) {
+      next = { ...next, backgroundAudioUrl: result.backgroundAudioUrl };
+    }
+
+    const hasNodeMedia = Boolean(result.imageUrl) || (result.audioUrls?.length ?? 0) > 0;
+    if (nodeKey && hasNodeMedia) {
+      next = {
+        ...next,
+        nodes: next.nodes.map((node) =>
+          node.id === nodeKey
+            ? {
+                ...node,
+                imageUrl: result.imageUrl ?? node.imageUrl,
+                audioUrls:
+                  result.audioUrls && result.audioUrls.length > 0
+                    ? result.audioUrls
+                    : node.audioUrls,
+              }
+            : node,
+        ),
+      };
+    }
+
+    if (next !== story) set({ story: next });
+  },
+
+  clear: () =>
+    set({ story: null, currentNodeId: null, decisions: [], mode: 'owner', pendingMedia: {} }),
 }));
 
 export function useCurrentNode(): StoryNode | null {

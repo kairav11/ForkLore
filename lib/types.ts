@@ -3,7 +3,7 @@ export type SettingId = 'school' | 'club' | 'bar' | 'city-center' | 'tv-tower';
 export type StyleId = 'flat-illustrated' | 'comic-ink' | 'painterly';
 
 export interface StoryChoice {
-  /** Letter used in the path string sent to the backend: a, b, ... */
+  /** Letter used in the path string: a, b, ... */
   letter: string;
   label: string;
   nextNodeId: string | null;
@@ -18,6 +18,8 @@ export interface StoryNode {
   audioUrls: string[];
   choices: StoryChoice[];
   isEnding: boolean;
+  /** 0 for the opening scene, 3 for an ending. */
+  depth: number;
 }
 
 export interface Story {
@@ -46,15 +48,26 @@ export interface CreateStoryInput {
   settingId: SettingId;
   prompt: string;
   styleId: StyleId;
+  /** Shown to friends on the match screen. */
+  ownerName?: string;
 }
 
 /** A decision the current player made, in order. */
 export interface Decision {
   nodeId: string;
   nodeText: string;
-  nodeImageUrl: string | null;
   choiceLetter: string;
   choiceLabel: string;
 }
 
 export type PlayMode = 'owner' | 'shared';
+
+/** One generated asset: the fixed backdrop, its ambience, or one scene's art / narration. */
+export type MediaTarget = 'background' | 'ambient' | 'image' | 'narration';
+
+export interface MediaResult {
+  backgroundImageUrl?: string | null;
+  backgroundAudioUrl?: string | null;
+  imageUrl?: string | null;
+  audioUrls?: string[];
+}

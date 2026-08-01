@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Button, Card, Text } from 'heroui-native';
+import { Button, Text } from 'heroui-native';
 import { RefreshCw, Sparkles } from 'lucide-react-native';
 
 import { errorMessage, getMatch } from '@/lib/api';
 import { useStoryStore } from '@/lib/storyStore';
 import { palette } from '@/lib/theme';
 import type { MatchResult } from '@/lib/types';
+import { GlowBackground } from '@/components/GlowBackground';
+import { MatchRing } from '@/components/MatchRing';
 import { ErrorState, LoadingState } from '@/components/StoryStatus';
+import { Display } from '@/components/ui/Display';
+
+function verdict(score: number): string {
+  if (score >= 80) return 'Almost the same story — you two think alike.';
+  if (score >= 40) return 'Some shared instincts, some very different turns.';
+  return 'You took this story somewhere else entirely.';
+}
 
 export default function MatchScreen() {
   const router = useRouter();
@@ -58,59 +67,58 @@ export default function MatchScreen() {
   }
 
   if (!result) {
-    return <LoadingState title="Comparing your decisions..." />;
+    return <LoadingState title="Comparing your decisions…" />;
   }
 
   const ownerName = result.ownerName ?? owner ?? 'the story owner';
 
   return (
-    <View className="bg-background pt-safe-offset-6 pb-safe-offset-5 flex-1 justify-between px-5">
-      <View className="flex-1 justify-center gap-8">
-        <View className="items-center gap-3">
-          <Text className="text-accent text-sm font-semibold tracking-widest uppercase">
-            Match score
-          </Text>
-          <Text className="text-accent text-8xl font-bold">{result.score}%</Text>
-          <Text.Heading type="h2" align="center" className="text-2xl leading-tight">
-            You matched {result.score}% with {ownerName}
-          </Text.Heading>
-          <Text.Paragraph align="center" color="muted" className="text-lg leading-7">
-            You agreed on {result.agreedCount} of {result.totalCount}{' '}
-            {result.totalCount === 1 ? 'decision' : 'decisions'}.
-          </Text.Paragraph>
+    <GlowBackground>
+      <View className="pt-safe-offset-6 pb-safe-offset-5 flex-1 justify-between px-5">
+        <View className="flex-1 items-center justify-center gap-8">
+          <MatchRing score={result.score} />
+
+          <View className="items-center gap-3">
+            <Display className="text-center text-[30px] leading-9">
+              You matched {result.score}% with {ownerName}
+            </Display>
+            <Text className="text-muted text-center text-lg leading-7">
+              You agreed on {result.agreedCount} of {result.totalCount}{' '}
+              {result.totalCount === 1 ? 'decision' : 'decisions'}.
+            </Text>
+          </View>
+
+          <View
+            className="border-border/60 w-full rounded-3xl border p-5"
+            style={{ backgroundColor: 'rgba(36, 29, 22, 0.6)' }}
+          >
+            <Text className="text-foreground text-base leading-7">{verdict(result.score)}</Text>
+          </View>
         </View>
 
-        <Card className="gap-2 p-5">
-          <Text className="text-foreground text-base leading-6">
-            {result.score >= 80
-              ? 'Almost the same story — you two think alike.'
-              : result.score >= 40
-                ? 'Some shared instincts, some very different turns.'
-                : 'You took this story somewhere else entirely.'}
-          </Text>
-        </Card>
+        <View className="gap-3">
+          <Button
+            size="lg"
+            variant="tertiary"
+            className="border-border/70 h-13 rounded-2xl border"
+            onPress={() => router.push({ pathname: '/replay/[id]', params: { id } })}
+          >
+            <RefreshCw size={16} color={palette.foreground} />
+            <Button.Label className="text-base">Replay the whole story</Button.Label>
+          </Button>
+          <Button
+            size="lg"
+            className="h-14 rounded-2xl"
+            onPress={() => {
+              clear();
+              router.replace('/');
+            }}
+          >
+            <Sparkles size={20} color={palette.accentForeground} />
+            <Button.Label className="text-lg font-semibold">Create My Own Story</Button.Label>
+          </Button>
+        </View>
       </View>
-
-      <View className="gap-3">
-        <Button
-          size="lg"
-          variant="secondary"
-          onPress={() => router.push({ pathname: '/replay/[id]', params: { id } })}
-        >
-          <RefreshCw size={18} color={palette.foreground} />
-          <Button.Label className="text-base">Replay The Whole Story</Button.Label>
-        </Button>
-        <Button
-          size="lg"
-          onPress={() => {
-            clear();
-            router.replace('/');
-          }}
-        >
-          <Sparkles size={20} color={palette.accentForeground} />
-          <Button.Label className="text-lg">Create My Own Story</Button.Label>
-        </Button>
-      </View>
-    </View>
+    </GlowBackground>
   );
 }

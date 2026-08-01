@@ -1,20 +1,31 @@
 /**
- * Native color constants.
+ * Native color and font constants.
  *
- * Colors used outside of `className` resolution (React Navigation options,
- * StatusBar, icon props, gradients) must be React Native-parseable, so they are
- * kept here as hex/rgba equivalents of the tokens defined in `global.css`.
+ * Values used outside of `className` resolution (React Navigation options,
+ * StatusBar, icon props, gradients, SVG paint) must be React Native-parseable,
+ * so they are kept here as hex / rgba equivalents of the tokens in `global.css`.
  */
 export const palette = {
-  background: '#181310',
-  surface: '#241E1A',
-  surfaceSecondary: '#2C2521',
-  foreground: '#F7F2EA',
-  muted: '#A79C90',
-  accent: '#F5A552',
-  accentForeground: '#2A1C09',
-  border: '#3A322C',
-  scrim: 'rgba(16, 12, 10, 0.72)',
-  scrimSoft: 'rgba(16, 12, 10, 0.35)',
+  background: '#161109',
+  backgroundDeep: '#0D0A06',
+  surface: '#241D16',
+  surfaceSecondary: '#2E251D',
+  foreground: '#F8F3EA',
+  muted: '#ABA093',
+  accent: '#FBAB55',
+  accentForeground: '#2C1D0A',
+  accentSoft: 'rgba(251, 171, 85, 0.14)',
+  ember: '#D2603F',
+  emberSoft: 'rgba(210, 96, 63, 0.12)',
+  border: '#3B3128',
+  scrim: 'rgba(13, 10, 6, 0.55)',
+  scrimSoft: 'rgba(13, 10, 6, 0.2)',
+  scrimStrong: 'rgba(13, 10, 6, 0.95)',
   transparent: 'transparent',
+} as const;
+
+/** Playfair Display carries the story voice; Inter handles UI and body copy. */
+export const fonts = {
+  display: 'PlayfairDisplay_700Bold',
+  displayMedium: 'PlayfairDisplay_600SemiBold',
 } as const;
