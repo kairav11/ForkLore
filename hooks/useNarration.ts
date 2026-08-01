@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio';
+import { useAudioPlayer } from 'expo-audio';
 
 export interface Narration {
   hasAudio: boolean;
@@ -8,17 +8,28 @@ export interface Narration {
   stop: () => void;
 }
 
+/** How often the fallback finish check runs while a scene is playing. */
+const POLL_MS = 250;
+/** How close to the end counts as finished when no finish event arrives. */
+const END_TOLERANCE_S = 0.35;
+
 /**
- * Plays a node's narrated line(s) back to back over the ambient loop.
+ * Plays a scene's narrated lines back to back over the ambient loop.
  *
- * The player keeps whatever source was last handed to it, so the loaded url is
- * tracked here: when the scene changes it is cleared, which forces the next tap
- * to `replace()` instead of resuming — otherwise scene two would play scene
- * one's narration again from where it stopped.
+ * Two traps this hook exists to avoid:
+ *
+ * 1. `useAudioPlayerStatus` returns the LAST status event, and `didJustFinish`
+ *    stays true after a clip ends. Reading it in an effect meant the first tap on
+ *    the next scene saw a stale "finished" flag and skipped straight to line two
+ *    — so a scene whose first line is narration and second line is dialogue
+ *    played only the dialogue. Finishes are therefore taken from real player
+ *    events and de-duplicated against the clip they belong to.
+ * 2. On web the player does not reliably emit a finished status at all, so a
+ *    short poll acts as a safety net: paused, at the end, still in a play
+ *    session means that line is done.
  */
 export function useNarration(urls: readonly string[]): Narration {
   const player = useAudioPlayer(null);
-  const status = useAudioPlayerStatus(player);
 
   // Compare by content, not array identity: the story object is re-read while
   // media is generated and must not interrupt playback of an unchanged scene.
@@ -29,63 +40,109 @@ export function useNarration(urls: readonly string[]): Narration {
   const lineIndex = useRef(0);
   /** The url currently sitting in the player, or null when it holds a stale one. */
   const loaded = useRef<string | null>(null);
+  /** The url whose finish has already been acted on, so it never fires twice. */
+  const finished = useRef<string | null>(null);
+  const playing = useRef(false);
   const [isPlaying, setIsPlaying] = useState(false);
 
-  const stop = useCallback(() => {
-    setIsPlaying(false);
-    lineIndex.current = 0;
-    loaded.current = null;
-    player.pause();
-  }, [player]);
+  const setPlaying = useCallback((value: boolean) => {
+    playing.current = value;
+    setIsPlaying(value);
+  }, []);
 
-  // Reset when the scene changes.
-  useEffect(() => {
-    lines.current = queue;
-    lineIndex.current = 0;
-    loaded.current = null;
-    setIsPlaying(false);
-    player.pause();
-  }, [queue, player]);
-
-  // Advance to the next narrated line.
-  useEffect(() => {
-    if (!status.didJustFinish || !isPlaying) return;
-    const next = lineIndex.current + 1;
-    const nextUrl = lines.current[next];
-    if (nextUrl) {
-      lineIndex.current = next;
-      loaded.current = nextUrl;
-      player.replace({ uri: nextUrl });
+  /** Loads and plays one line. Returns false when that line does not exist. */
+  const playLine = useCallback(
+    (index: number): boolean => {
+      const url = lines.current[index];
+      if (!url) return false;
+      lineIndex.current = index;
+      loaded.current = url;
+      finished.current = null;
+      player.replace({ uri: url });
       player.play();
-    } else {
+      setPlaying(true);
+      return true;
+    },
+    [player, setPlaying],
+  );
+
+  const rewind = useCallback(() => {
+    lineIndex.current = 0;
+    loaded.current = null;
+    finished.current = null;
+    setPlaying(false);
+  }, [setPlaying]);
+
+  /** The current line ended: move to the next one, or stop after the last. */
+  const onLineFinished = useCallback(() => {
+    const current = loaded.current;
+    if (!playing.current || current === null || finished.current === current) return;
+    finished.current = current;
+    if (!playLine(lineIndex.current + 1)) {
       // Played to the end: the next tap starts the scene over.
-      lineIndex.current = 0;
-      loaded.current = null;
-      setIsPlaying(false);
+      player.pause();
+      rewind();
     }
-  }, [status.didJustFinish, isPlaying, player]);
+  }, [playLine, player, rewind]);
+
+  // Reset when the scene changes, so the next tap reloads instead of resuming
+  // wherever the previous scene's narration was left. A queue that merely grew —
+  // a later line of the same scene finished recording — is not a scene change and
+  // must not cut off what is playing.
+  useEffect(() => {
+    const previous = lines.current;
+    const grew =
+      queue.length > previous.length && previous.every((url, index) => queue[index] === url);
+    lines.current = queue;
+    if (grew && playing.current) return;
+    rewind();
+    player.pause();
+  }, [queue, player, rewind]);
+
+  // Real player events: the only trustworthy source of "this clip ended".
+  useEffect(() => {
+    const subscription = player.addListener('playbackStatusUpdate', (status) => {
+      if (status.didJustFinish) onLineFinished();
+    });
+    return () => subscription.remove();
+  }, [player, onLineFinished]);
+
+  // Web fallback: no finished event is emitted there, so watch the playhead.
+  useEffect(() => {
+    if (!isPlaying) return undefined;
+    const timer = setInterval(() => {
+      const { duration, currentTime } = player;
+      if (player.playing || duration <= 0 || currentTime <= 0) return;
+      if (currentTime >= duration - END_TOLERANCE_S) onLineFinished();
+    }, POLL_MS);
+    return () => clearInterval(timer);
+  }, [isPlaying, player, onLineFinished]);
+
+  const stop = useCallback(() => {
+    player.pause();
+    rewind();
+  }, [player, rewind]);
 
   const toggle = useCallback(() => {
-    const current = lines.current[lineIndex.current] ?? lines.current[0];
+    if (playing.current) {
+      player.pause();
+      setPlaying(false);
+      return;
+    }
+
+    const current = lines.current[lineIndex.current];
     if (!current) return;
 
-    if (isPlaying) {
-      player.pause();
-      setIsPlaying(false);
-      return;
-    }
-
-    if (loaded.current === current) {
+    // Paused part way through this line: carry on from there. Anything else —
+    // a new scene, or a scene played to the end — starts the line afresh.
+    if (loaded.current === current && finished.current !== current) {
       player.play();
-      setIsPlaying(true);
+      setPlaying(true);
       return;
     }
 
-    loaded.current = current;
-    player.replace({ uri: current });
-    player.play();
-    setIsPlaying(true);
-  }, [isPlaying, player]);
+    playLine(lineIndex.current);
+  }, [playLine, player, setPlaying]);
 
   return { hasAudio: queue.length > 0, isPlaying, toggle, stop };
 }
